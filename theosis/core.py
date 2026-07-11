@@ -30,7 +30,7 @@ from .metrics import (
 )
 from .memory import parse_rule
 from .models import ModelSlot
-from .prompts import MEMORY_PREAMBLE, MERGE_PROMPT, PATCH_SYS, ROUTER_SYS, RULEMAKER_SYS, RUBRIC, SUMMARIZER_SYS
+from .prompts import ENHANCE_SYS, MEMORY_PREAMBLE, MERGE_PROMPT, PATCH_SYS, ROUTER_SYS, RULEMAKER_SYS, RUBRIC, SELF_RUBRIC, SUMMARIZER_SYS
 from .router import build_roster, parse_plan
 from .strategies import get_strategy, round_robin as audit_assignments
 from .verifiers import evidence_text, run_verifiers
@@ -87,6 +87,17 @@ def _mock_completion(slot: ModelSlot, messages: List[dict]) -> str:
         }, ensure_ascii=False)
     if "compress an EARLIER part of a conversation" in system or "SUMMARIZER" in system:
         return "(mock·tóm tắt) Người dùng đã cung cấp thông tin và đặt các câu hỏi nối tiếp ở các lượt trước."
+    if "quality control on an answer BEFORE" in system:
+        return (
+            "VERDICT: mixed\n"
+            "ISSUES:\n"
+            f"- [MED] (mock·self-audit) câu trả lời của «{slot.name}» thiếu ví dụ -> thêm ví dụ.\n"
+            "- [LOW] (mock·self-audit) cần câu chốt rõ hơn.\n"
+            "MISSING: một câu chốt.\n"
+            "KEEP: mạch lạc."
+        )
+    if "quality-enhancement pass" in system:
+        return f"(mock·{slot.name}) Bản enhance (giả lập) cho model «{slot.model}»."
     if "Revise YOUR answer" in system:
         return f"(mock·{slot.name}) Bản đã vá (giả lập) cho model «{slot.model}»."
     mem = "[ký-ức] " if "BÀI HỌC ĐÃ GHI NHỚ" in system else ""
@@ -289,6 +300,22 @@ async def audit(client: httpx.AsyncClient, auditor: ModelSlot, request: str, ans
     ]
     return await _call(client, auditor, messages, temperature=0.3)
 
+
+async def self_audit(client: httpx.AsyncClient, slot: ModelSlot, request: str, answer: str) -> CompletionResult:
+    """OneTheosis: the slot audits its own answer with a neutral adversarial rubric."""
+    messages = [
+        {"role": "system", "content": SELF_RUBRIC},
+        {"role": "user", "content": f"REQUEST:\n{request}\n\nANSWER TO AUDIT:\n{answer}"},
+    ]
+    return await _call(client, slot, messages, temperature=0.3)
+
+async def enhance(client: httpx.AsyncClient, slot: ModelSlot, request: str, answer: str,
+                  critique: str, history: Optional[List[dict]] = None) -> CompletionResult:
+    """OneTheosis: rewrite the answer using the self-audit critique."""
+    messages = [{"role": "system", "content": ENHANCE_SYS}]
+    messages.extend(_history_messages(history))
+    messages.append({"role": "user", "content": f"REQUEST:\n{request}\n\nYOUR ANSWER:\n{answer}\n\nCRITIQUE:\n{critique}"})
+    return await _call(client, slot, messages, temperature=0.5)
 
 async def patch(client: httpx.AsyncClient, slot: ModelSlot, request: str, answer: str,
                 critique: str, history: Optional[List[dict]] = None) -> CompletionResult:
@@ -628,6 +655,143 @@ async def _deliberate(
     return answers, last_crit, scores, evidence, enabled, trail, cost
 
 
+def _resolve_mode(mode: str, enabled_count: int) -> str:
+    """auto → one khi chỉ 1 slot bật, ngược lại council. Validate tên mode. Thuần."""
+    m = (mode or "auto").strip().lower()
+    if m not in ("auto", "council", "one"):
+        raise ValueError(f"mode không hợp lệ: {mode!r} (auto | council | one)")
+    if m == "auto":
+        return "one" if enabled_count == 1 else "council"
+    return m
+
+# ── OneTheosis: single-model self-refine loop ────────────────────────────────
+async def _one_theosis(
+    client: httpx.AsyncClient,
+    request: str,
+    slot: ModelSlot,
+    *,
+    rounds: int,
+    on_event: EventCb,
+    max_tokens_budget: Optional[int],
+    converge_threshold: float,
+    use_executor: bool = False,
+    executor_timeout: float = 6.0,
+    memory_rules: Optional[List[str]] = None,
+    history: Optional[List[dict]] = None,
+):
+    """OneTheosis mode: one model drafts, then self-audits and enhances its own
+    answer for up to ``rounds`` iterations (default 3) before the final output.
+
+    draft → [self-audit → enhance] × rounds → final.
+    Stops early on convergence, budget, or a clean ``strong`` verdict.
+    Returns (final, trail, cost).
+    """
+    cost = new_cost_acc()
+    trail: dict = {"fanout": {}, "rounds": [], "final": None, "cost": cost,
+                   "scores": {}, "evidence": {}, "route": None, "memory": None,
+                   "learned": None, "stopped_reason": None, "mode": "one"}
+
+    async def emit(event: dict) -> None:
+        if on_event:
+            await on_event(event)
+
+    def over_budget() -> bool:
+        return max_tokens_budget is not None and cost["total_tokens"] >= max_tokens_budget
+
+    lessons = None
+    if memory_rules:
+        lessons = "\n".join(f"- {g}" for g in memory_rules)
+        trail["memory"] = list(memory_rules)
+        await emit({"type": "memory", "rules": list(memory_rules)})
+
+    await emit({"type": "fanout_start", "slots": [slot.name], "mode": "one"})
+    res = await ask_slot(client, slot, request, lessons, history)
+    add_cost(cost, slot.model, res.usage)
+    answer = res.text
+    trail["fanout"] = {slot.name: answer}
+    await emit({"type": "fanout_done", "answers": {slot.name: answer}, "cost": dict(cost)})
+
+    evidence: Dict[str, dict] = {}
+    if use_executor:
+        evidence = await _verify_all({slot.name: answer}, executor_timeout)
+        trail["evidence"] = dict(evidence)
+        await emit({"type": "evidence", "phase": "fanout",
+                    "results": {n: {"status": e["status"], "summary": e["summary"]} for n, e in evidence.items()}})
+
+    last_crit = ""
+    for rnd in range(rounds):
+        if over_budget():
+            trail["stopped_reason"] = "budget"
+            await emit({"type": "budget_hit", "tokens": cost["total_tokens"]})
+            break
+
+        await emit({"type": "round_start", "round": rnd, "mode": "one"})
+
+        # Self-audit — kèm evidence nếu có (executor là ground truth)
+        aug = answer
+        appx = evidence_text(evidence.get(slot.name)) if evidence else ""
+        if appx:
+            aug = answer + f"\n\n[EVIDENCE]\n{appx}"
+        try:
+            ares = await self_audit(client, slot, request, aug)
+        except Exception as exc:
+            await emit({"type": "slot_error", "slot": slot.name, "phase": "audit", "message": _errmsg(exc)})
+            break
+        add_cost(cost, slot.model, ares.usage)
+        last_crit = ares.text
+        v = verdict_score(last_crit)
+        await emit({"type": "audit_done", "round": rnd,
+                    "reviews": [{"target": slot.name, "auditor": slot.name, "critique": last_crit, "verdict": v}],
+                    "pairs": {slot.name: [slot.name]},
+                    "critiques": {slot.name: last_crit}, "cost": dict(cost)})
+
+        # Enhance
+        try:
+            eres = await enhance(client, slot, request, answer, last_crit, history)
+        except Exception as exc:
+            await emit({"type": "slot_error", "slot": slot.name, "phase": "patch", "message": _errmsg(exc)})
+            break
+        add_cost(cost, slot.model, eres.usage)
+        prev = answer
+        answer = eres.text
+        trail["rounds"].append({
+            "pairs": {slot.name: [slot.name]},
+            "critiques": {slot.name: last_crit},
+            "reviews": {slot.name: [{"auditor": slot.name, "critique": last_crit, "verdict": v}]},
+            "patched": {slot.name: answer},
+        })
+        await emit({"type": "patch_done", "round": rnd, "answers": {slot.name: answer}, "cost": dict(cost)})
+
+        if use_executor:
+            evidence = await _verify_all({slot.name: answer}, executor_timeout)
+            trail["evidence"] = dict(evidence)
+            await emit({"type": "evidence", "phase": f"round{rnd}",
+                        "results": {n: {"status": e["status"], "summary": e["summary"]} for n, e in evidence.items()}})
+
+        # Early exits: hội tụ, hoặc verdict strong (và executor không báo fail)
+        sim = avg_similarity({slot.name: prev}, {slot.name: answer})
+        ev = evidence.get(slot.name) if evidence else None
+        ev_fail = bool(ev and ev.get("status") == "fail")
+        if sim >= converge_threshold:
+            trail["stopped_reason"] = "converged"
+            await emit({"type": "converged", "round": rnd, "similarity": round(sim, 3)})
+            break
+        if v >= 1.0 and not ev_fail and rnd < rounds - 1:
+            trail["stopped_reason"] = "strong_verdict"
+            await emit({"type": "converged", "round": rnd, "similarity": round(sim, 3), "reason": "strong_verdict"})
+            break
+
+    score = verdict_score(last_crit)
+    ev = evidence.get(slot.name) if evidence else None
+    if ev and ev.get("status") == "fail":
+        score = min(score, 0.15)
+    elif ev and ev.get("status") == "pass":
+        score = max(score, 0.7)
+    trail["scores"] = {slot.name: round(score, 3)}
+    trail["final"] = answer
+    trail["cost"] = dict(cost)
+    return answer, trail, cost
+
 # ── Orchestrators ────────────────────────────────────────────────────────────
 async def theosis(
     request: str,
@@ -649,14 +813,39 @@ async def theosis(
     history: Optional[List[dict]] = None,
     max_history_turns: int = 8,
     summarize_history: bool = False,
+    mode: str = "auto",
 ) -> Tuple[str, dict]:
-    """Run the full pipeline and return (final_answer, trail)."""
+    """Run the full pipeline and return (final_answer, trail).
+
+    Modes: ``auto`` (council if ≥2 slots, OneTheosis if 1) · ``council`` ·
+    ``one`` (OneTheosis: first enabled slot drafts, then self-audits and
+    enhances its own answer ``max_rounds`` times before the final output).
+    """
     async def emit(event: dict) -> None:
         if on_event:
             await on_event(event)
 
+    _enabled = [s for s in slots if s.enabled]
+    if not _enabled:
+        raise ValueError("Cần ít nhất 1 slot được bật.")
+    effective = _resolve_mode(mode, len(_enabled))
+
     async with httpx.AsyncClient() as client:
         hist, _sres = await _prepare_history_smart(client, aggregator, history, max_history_turns, summarize_history)
+        if effective == "one":
+            rounds_one = max_rounds if max_rounds and max_rounds > 0 else 3
+            final, trail, cost = await _one_theosis(
+                client, request, _enabled[0], rounds=rounds_one, on_event=on_event,
+                max_tokens_budget=max_tokens_budget, converge_threshold=converge_threshold,
+                use_executor=use_executor, executor_timeout=executor_timeout,
+                memory_rules=memory_rules, history=hist,
+            )
+            if _sres is not None:
+                add_cost(cost, aggregator.model, _sres.usage)
+                trail["cost"] = dict(cost)
+            await emit({"type": "done", "final": final, "trail": trail,
+                        "cost": dict(cost), "scores": trail["scores"]})
+            return final, trail
         answers, last_crit, scores, evidence, enabled, trail, cost = await _deliberate(
             client, request, slots, aggregator, max_rounds=max_rounds, on_event=on_event,
             max_tokens_budget=max_tokens_budget, converge_threshold=converge_threshold,
@@ -677,6 +866,7 @@ async def theosis(
             final = next(iter(answers.values()))
         trail["final"] = final
         trail["cost"] = dict(cost)
+        trail["mode"] = "council"
         await emit({"type": "done", "final": final, "trail": trail, "cost": dict(cost), "scores": scores})
         return final, trail
 
@@ -701,14 +891,34 @@ async def theosis_stream(
     history: Optional[List[dict]] = None,
     max_history_turns: int = 8,
     summarize_history: bool = False,
+    mode: str = "auto",
 ) -> AsyncIterator[str]:
     """Run the pipeline and stream the final answer token-by-token.
 
     The deliberation phases run first (you can observe them via ``on_event``);
     then the merge is streamed from the aggregator and yielded chunk by chunk.
+    In OneTheosis mode the refined final answer is yielded in word chunks.
     """
+    _enabled = [s for s in slots if s.enabled]
+    if not _enabled:
+        raise ValueError("Cần ít nhất 1 slot được bật.")
+    effective = _resolve_mode(mode, len(_enabled))
+
     async with httpx.AsyncClient() as client:
         hist, _sres = await _prepare_history_smart(client, aggregator, history, max_history_turns, summarize_history)
+        if effective == "one":
+            rounds_one = max_rounds if max_rounds and max_rounds > 0 else 3
+            final, _trail, _cost = await _one_theosis(
+                client, request, _enabled[0], rounds=rounds_one, on_event=on_event,
+                max_tokens_budget=max_tokens_budget, converge_threshold=converge_threshold,
+                use_executor=use_executor, executor_timeout=executor_timeout,
+                memory_rules=memory_rules, history=hist,
+            )
+            if on_event:
+                await on_event({"type": "merge_start"})
+            for tok in _chunk_words(final):
+                yield tok
+            return
         answers, last_crit, scores, evidence, enabled, trail, _cost = await _deliberate(
             client, request, slots, aggregator, max_rounds=max_rounds, on_event=on_event,
             max_tokens_budget=max_tokens_budget, converge_threshold=converge_threshold,

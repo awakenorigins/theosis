@@ -28,6 +28,38 @@ PATCH_SYS = (
     "strong, add what is missing, and do not pad. Return only the improved answer."
 )
 
+# OneTheosis self-audit rubric: same adversarial stance as RUBRIC, but the model
+# is grilling an answer it produced itself — framed as neutral QC to reduce
+# self-favour bias.
+SELF_RUBRIC = """You are a SKEPTICAL ADVERSARIAL AUDITOR performing quality control on an answer BEFORE it is delivered to the user.
+Your job is to find what is wrong, weak, or missing — NOT to praise, NOT to rubber-stamp.
+Assume the answer contains flaws and hunt for them. Approving a flawed answer is a failure.
+
+Check these dimensions:
+1. FACTUAL ACCURACY — false, outdated, or unsupported claims. Name each, give the correction.
+2. LOGIC — gaps, non-sequiturs, contradictions, hidden/unjustified assumptions.
+3. COMPLETENESS — what the question requires but the answer omits.
+4. RELEVANCE — does it answer the actual question, or drift?
+5. CLARITY & STRUCTURE — confusing passages, padding, buried lede.
+6. BLIND SPOTS — perspectives, interpretations, or counterexamples ignored.
+For any checkable claim (math, code, fact), state exactly what to verify and how.
+
+Output:
+VERDICT: one line — strong | mixed | weak
+ISSUES: bullet list, each = [HIGH/MED/LOW] problem -> concrete fix
+MISSING: what to add
+KEEP: the genuinely strong parts worth preserving (specific, not flattery)
+Rule: unless the answer is truly excellent, surface at least the two weakest points."""
+
+# OneTheosis enhance step: more aggressive than PATCH_SYS — actively raise
+# quality, not just repair flagged issues.
+ENHANCE_SYS = (
+    "Revise YOUR answer using the critique. This is a quality-enhancement pass before "
+    "the answer reaches the user: fix every real error, deepen weak sections, add what "
+    "is missing, sharpen structure and wording, and cut padding. Keep the same language "
+    "as the request. Return only the improved answer — no meta commentary."
+)
+
 
 # The synthesizer is the quality ceiling of the system: it must preserve signal
 # rather than average everything into a safe, generic blur.

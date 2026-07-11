@@ -4,7 +4,7 @@ import asyncio
 import pytest
 
 from theosis.config import demo_aggregator, demo_slots
-from theosis.core import audit_pairs, theosis
+from theosis.core import audit_pairs, theosis, theosis_stream
 from theosis.metrics import avg_similarity, estimate_cost, verdict_score
 from theosis.models import ModelSlot
 
@@ -31,12 +31,15 @@ def test_pipeline_runs_in_mock_mode():
         assert s.name in trail["fanout"]
 
 
-def test_single_slot_skips_cross_audit():
+def test_single_slot_no_cross_audit():
+    """1 slot không bao giờ audit CHÉO — auto mode giờ chạy OneTheosis (tự audit)."""
     slots = demo_slots()
     for s in slots:
         s.enabled = s.name == "opus"
     final, trail = asyncio.run(theosis("hi", slots, demo_aggregator(), max_rounds=2))
-    assert trail["rounds"] == []
+    assert trail["mode"] == "one"  # auto → OneTheosis khi chỉ 1 slot
+    for rnd in trail["rounds"]:
+        assert rnd["pairs"] == {"opus": ["opus"]}  # chỉ tự chấm, không có cặp chéo
     assert final.strip()
 
 
@@ -994,3 +997,103 @@ def test_summarize_end_to_end_and_server_flag(tmp_path, monkeypatch):
         "prompt": "Câu mới", "enabled_slots": ["opus", "gpt"], "history": H, "summarize_history": True,
     }).text.splitlines() if x.strip()]
     assert any(e["type"] == "done" for e in ev)
+
+
+# ── OneTheosis: single-model self-audit → enhance loop ───────────────────────
+def test_auto_mode_single_slot_runs_onetheosis():
+    """auto + 1 slot → OneTheosis: self-audit rounds run instead of being skipped."""
+    slots = demo_slots()
+    for s in slots:
+        s.enabled = s.name == "opus"
+    final, trail = asyncio.run(theosis("hi", slots, demo_aggregator(), max_rounds=3))
+    assert trail["mode"] == "one"
+    assert len(trail["rounds"]) >= 1  # không còn bị skip như trước
+    assert final.strip()
+    for rnd in trail["rounds"]:
+        assert rnd["pairs"] == {"opus": ["opus"]}  # tự chấm
+
+
+def test_one_mode_forced_with_multiple_slots_uses_first():
+    slots = demo_slots()
+    for s in slots:
+        s.enabled = True
+    final, trail = asyncio.run(theosis("hi", slots, demo_aggregator(), max_rounds=2, mode="one"))
+    assert trail["mode"] == "one"
+    assert list(trail["fanout"]) == ["opus"]  # chỉ slot đầu tiên được dùng
+    assert final.strip()
+
+
+def test_auto_mode_multi_slot_stays_council():
+    slots = demo_slots()
+    for s in slots:
+        s.enabled = True
+    _, trail = asyncio.run(theosis("hi", slots, demo_aggregator(), max_rounds=1))
+    assert trail["mode"] == "council"
+
+
+def test_council_mode_single_slot_degrades_to_draft():
+    """Ép council với 1 slot → giữ hành vi cũ (không audit, trả draft)."""
+    slots = demo_slots()
+    for s in slots:
+        s.enabled = s.name == "opus"
+    final, trail = asyncio.run(theosis("hi", slots, demo_aggregator(), max_rounds=2, mode="council"))
+    assert trail["mode"] == "council"
+    assert trail["rounds"] == []
+    assert final.strip()
+
+
+def test_invalid_mode_raises():
+    slots = demo_slots()
+    try:
+        asyncio.run(theosis("hi", slots, demo_aggregator(), mode="nope"))
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+
+
+def test_one_mode_cost_and_scores():
+    slots = demo_slots()
+    for s in slots:
+        s.enabled = s.name == "opus"
+    _, trail = asyncio.run(theosis("hi", slots, demo_aggregator(), max_rounds=3, mode="one"))
+    assert trail["cost"]["calls"] >= 3  # draft + ít nhất 1 vòng (audit+enhance)
+    assert "opus" in trail["scores"]
+
+
+def test_one_mode_stream_yields_final():
+    async def _run():
+        slots = demo_slots()
+        for s in slots:
+            s.enabled = s.name == "opus"
+        toks = []
+        async for t in theosis_stream("hi", slots, demo_aggregator(), max_rounds=2, mode="one"):
+            toks.append(t)
+        return "".join(toks)
+    out = asyncio.run(_run())
+    assert out.strip()
+
+
+def test_onetheosis_via_openai_endpoint_model_shortcut():
+    from fastapi.testclient import TestClient
+    from theosis import server as srv
+    client = TestClient(srv.app)
+    r = client.post("/v1/chat/completions", json={
+        "model": "onetheosis",
+        "messages": [{"role": "user", "content": "hi"}],
+    })
+    assert r.status_code == 200
+    assert r.json()["choices"][0]["message"]["content"].strip()
+
+
+def test_api_run_mode_one_streams_self_audit_events():
+    import json as _json
+    from fastapi.testclient import TestClient
+    from theosis import server as srv
+    client = TestClient(srv.app)
+    r = client.post("/api/run", json={"prompt": "hi", "mode": "one",
+                                      "enabled_slots": ["opus", "gpt"]})
+    assert r.status_code == 200
+    evs = [_json.loads(l) for l in r.text.splitlines() if l.strip()]
+    done = [e for e in evs if e["type"] == "done"]
+    assert done and done[0]["trail"]["mode"] == "one"
+    assert any(e["type"] == "audit_done" for e in evs)

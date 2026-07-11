@@ -56,6 +56,12 @@ aggregator:
 
 settings:
   max_rounds: 2
+  # Chế độ chạy mặc định:
+  #   auto    — council nếu ≥2 model bật, OneTheosis nếu chỉ 1 (khuyên dùng)
+  #   council — luôn chạy audit chéo đa model
+  #   one     — OneTheosis: 1 model tự audit → enhance (one_rounds lần) trước khi xuất
+  mode: auto
+  one_rounds: 3               # số vòng self-audit → enhance của OneTheosis
   strategy: round_robin       # ai chấm ai: round_robin | all_vs_all | star
   use_router: false           # bật = một model tự phân loại task → chọn model + chiến lược + vòng + executor
   # router: opus              # (tuỳ chọn) slot làm router; mặc định dùng aggregator

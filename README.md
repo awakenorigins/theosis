@@ -57,6 +57,7 @@ Hoặc dùng **CLI**:
 ```bash
 python -m theosis "Đệ quy là gì?"             # in câu trả lời cuối
 python -m theosis "..." --rounds 2 --json     # kèm trail (cost, scores, audit)
+python -m theosis "..." --mode one            # OneTheosis: 1 model tự audit → enhance ×3
 ```
 
 ## Chạy thật
@@ -101,11 +102,26 @@ aggregator:                    # model đứng ra tổng hợp = trần chất l
 
 settings:
   max_rounds: 2
+  mode: auto        # auto | council | one (OneTheosis)
+  one_rounds: 3     # số vòng self-audit → enhance của OneTheosis
 ```
 
 Base URL phổ biến (đều OpenAI-compatible): OpenAI `https://api.openai.com/v1` · Anthropic `https://api.anthropic.com/v1` · OpenRouter `https://openrouter.ai/api/v1` · DeepSeek `https://api.deepseek.com/v1` · xAI `https://api.x.ai/v1` · Groq `https://api.groq.com/openai/v1` · Ollama `http://localhost:11434/v1`.
 
 **Mẹo:** dùng các model **khác họ** để có bất đồng thật khi audit; ba phiên bản cùng họ thường mắc lỗi giống nhau.
+
+### OneTheosis — chạy với 1 model duy nhất
+
+Không cần council vẫn có quality gate: **OneTheosis** cho 1 model tự draft, rồi **tự audit → enhance** tối đa 3 vòng (mặc định) trước khi xuất final. Dừng sớm khi hội tụ, verdict `strong`, hoặc chạm budget — không đốt token vô ích.
+
+```
+draft → [self-audit → enhance] × 3 → final
+```
+
+- **Auto (mặc định):** bật đúng 1 model → tự vào OneTheosis; ≥2 model → council như cũ.
+- **Ép mode:** UI có nút Auto / Council / OneTheosis · CLI `--mode one` · API body `"mode": "one"` · hoặc gọi thẳng `model: "onetheosis"` qua endpoint OpenAI-compat.
+- **Chỉnh số vòng:** `settings.one_rounds` trong config, `--rounds` ở CLI, `max_rounds` trong body API.
+- **Chơi chung với mọi tính năng:** executor (evidence được tiêm vào self-audit từng vòng), ký ức miễn dịch, hội thoại đa lượt, streaming SSE.
 
 **Thêm model ngay trong UI:** bấm **＋ Thêm model** ở sidebar (preset sẵn OpenAI / Anthropic / OpenRouter / DeepSeek / xAI / Groq / Ollama, hoặc tuỳ chỉnh). Model thêm từ UI được lưu ở `slots.local.yaml` (đã gitignore) nên sống sót qua restart — và key **không** lọt vào `config.yaml`. Slot thêm kiểu này có nút ✕ để xoá; slot khai báo trong `config.yaml` thì quản lý trong file.
 
@@ -141,7 +157,7 @@ Vì là OpenAI-compatible, bạn có thể đặt chính Theosis làm **một sl
 |---|---|---|
 | `GET`  | `/` | Console web |
 | `POST` | `/v1/chat/completions` | OpenAI-compatible, **đa lượt** (gửi cả `messages`). `stream:true` để SSE. |
-| `GET`  | `/v1/models` | Liệt kê model (`theosis-v1`) |
+| `GET`  | `/v1/models` | Liệt kê model (`theosis-v1`, `onetheosis`) |
 | `POST` | `/api/run` | Stream NDJSON đầy đủ tiến độ; nhận `history`, `file_tokens` |
 | `POST` | `/api/upload` | Tải file (mọi định dạng) → token cho cả council đọc |
 | `GET`  | `/api/files/{token}` | Tải file (upload hoặc artifact xuất ra) |
@@ -186,7 +202,7 @@ Mỗi slot có một `MiddleLayer` riêng — chỗ để nâng cấp độc l�
 
 ## Roadmap
 
-**Xong ở v2 (12/12 blueprint) + V3-A/B/C/D:** chống lỗi từng slot · cost/token meter + budget guard · convergence early-stop · weighted merge · multi-auditor (M-of-N) · executor (ground-truth) · pluggable strategies · streaming SSE · CLI · packaging · **smart router** · **immune memory** (rule content-free) · **eval harness** (`python -m theosis.eval`) · **auto-learn đa nguồn** (executor-fail + chấm thấp + không hội tụ) · **review/verify** rule (tab Ký ức + cổng `verified_only`) · **auto-demote** rule có hại (học ngược từ eval, `--rules --demote`) · **dashboard thống kê** ký ức theo thời gian · **upload file mọi định dạng** (PDF/docx/xlsx/csv/text/ảnh → text chia chung cho cả council) + **xuất artifact** ra file tải về · **hội thoại đa lượt** (council nhớ ngữ cảnh; **sidebar nhiều box** lưu localStorage; **tóm tắt** hội thoại dài).
+**Xong ở v2 (12/12 blueprint) + V3-A/B/C/D:** chống lỗi từng slot · cost/token meter + budget guard · convergence early-stop · weighted merge · multi-auditor (M-of-N) · executor (ground-truth) · pluggable strategies · streaming SSE · CLI · packaging · **smart router** · **immune memory** (rule content-free) · **eval harness** (`python -m theosis.eval`) · **auto-learn đa nguồn** (executor-fail + chấm thấp + không hội tụ) · **review/verify** rule (tab Ký ức + cổng `verified_only`) · **auto-demote** rule có hại (học ngược từ eval, `--rules --demote`) · **dashboard thống kê** ký ức theo thời gian · **upload file mọi định dạng** (PDF/docx/xlsx/csv/text/ảnh → text chia chung cho cả council) + **xuất artifact** ra file tải về · **hội thoại đa lượt** (council nhớ ngữ cảnh; **sidebar nhiều box** lưu localStorage; **tóm tắt** hội thoại dài) · **OneTheosis** (1 model tự audit → enhance ×3 trước khi xuất; auto-kích hoạt khi chỉ bật 1 model).
 
 Hướng đi tiếp (persistence/replay, embedding convergence, provider adapters, immune memory…): xem [ROADMAP.md](ROADMAP.md).
 

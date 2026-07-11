@@ -63,6 +63,7 @@ class ChatReq(BaseModel):
     messages: List[Msg]
     max_rounds: Optional[int] = None
     max_tokens_budget: Optional[int] = None
+    mode: Optional[str] = None  # auto | council | one (OneTheosis)
     auditors_per_answer: Optional[int] = None
     use_executor: Optional[bool] = None
     strategy: Optional[str] = None
@@ -79,6 +80,7 @@ class RunReq(BaseModel):
     prompt: str
     max_rounds: Optional[int] = None
     max_tokens_budget: Optional[int] = None
+    mode: Optional[str] = None  # auto | council | one (OneTheosis)
     auditors_per_answer: Optional[int] = None
     use_executor: Optional[bool] = None
     strategy: Optional[str] = None
@@ -128,6 +130,20 @@ def _active_slots(enabled_names: Optional[List[str]]) -> List[ModelSlot]:
 
 def _default_rounds(value: Optional[int]) -> int:
     return value if value is not None else int(SETTINGS.get("max_rounds", 2))
+
+
+def _resolve_req_mode(req: "ChatReq") -> str:
+    """Body `mode` thắng; nếu không có, model id 'onetheosis' là shortcut mode one."""
+    if req.mode is None and req.model.strip().lower() in ("onetheosis", "theosis-one", "one-theosis"):
+        return "one"
+    return _default_mode(req.mode)
+
+
+def _default_mode(value: Optional[str]) -> str:
+    mode = (value or SETTINGS.get("mode") or "auto").strip().lower()
+    if mode not in ("auto", "council", "one"):
+        raise HTTPException(status_code=400, detail=f"mode không hợp lệ: '{mode}' (auto | council | one)")
+    return mode
 
 
 def _default_auditors(value: Optional[int]) -> int:
@@ -323,7 +339,7 @@ async def api_run(req: RunReq):
                     await queue.put({"type": "attachments",
                                      "files": FILES.uploads_meta(req.file_tokens)})
                 final, trail = await theosis(
-                    full_prompt, slots, AGGREGATOR, max_rounds=max_rounds,
+                    full_prompt, slots, AGGREGATOR, max_rounds=max_rounds, mode=_default_mode(req.mode),
                     history=[m.model_dump() for m in (req.history or [])],
                     summarize_history=_default_summarize(req.summarize_history),
                     on_event=on_event, max_tokens_budget=req.max_tokens_budget,
@@ -450,7 +466,10 @@ def delete_memory(rule_id: str):
 def list_models():
     return {
         "object": "list",
-        "data": [{"id": "theosis-v1", "object": "model", "owned_by": "theosis"}],
+        "data": [
+            {"id": "theosis-v1", "object": "model", "owned_by": "theosis"},
+            {"id": "onetheosis", "object": "model", "owned_by": "theosis"},
+        ],
     }
 
 
@@ -471,6 +490,7 @@ async def _openai_sse(user: str, history: list, req: "ChatReq"):
     try:
         async for tok in theosis_stream(
             user, SLOTS, AGGREGATOR, max_rounds=_default_rounds(req.max_rounds),
+            mode=_resolve_req_mode(req),
             history=history, summarize_history=_default_summarize(req.summarize_history),
             max_tokens_budget=req.max_tokens_budget,
             auditors_per_answer=_default_auditors(req.auditors_per_answer),
@@ -500,6 +520,7 @@ async def chat_completions(req: ChatReq):
     try:
         final, trail = await theosis(
             user, SLOTS, AGGREGATOR, max_rounds=max_rounds, history=history,
+            mode=_resolve_req_mode(req),
             summarize_history=_default_summarize(req.summarize_history),
             max_tokens_budget=req.max_tokens_budget,
             auditors_per_answer=_default_auditors(req.auditors_per_answer),

@@ -2,6 +2,30 @@
 
 Theo [Keep a Changelog](https://keepachangelog.com/) và [SemVer](https://semver.org/).
 
+## [2.15.0] — 2026-07-11 · OneTheosis — 1 model tự audit → enhance trước khi xuất
+
+### Added
+- **OneTheosis mode.** Chạy với 1 model duy nhất vẫn có quality gate: model tự draft, rồi **tự audit → enhance** tối đa 3 vòng (mặc định) trước khi xuất final. `draft → [self-audit → enhance] × N → final`.
+  - Prompts mới: `SELF_RUBRIC` (self-audit trung lập chống self-favour — đóng khung là QC trước khi giao user, không nói "đây là bài của bạn") + `ENHANCE_SYS` (chủ động nâng chất lượng: đào sâu chỗ yếu, siết cấu trúc, cắt độn — không chỉ vá lỗi được flag).
+  - Core: `_one_theosis()` (loop riêng, resilient — audit/enhance lỗi thì dừng loop trả bản tốt nhất hiện có, không sập); `_resolve_mode()` thuần.
+  - **Early-stop 3 lớp:** hội tụ (difflib ratio ≥ ngưỡng) · verdict `strong` (và executor không báo fail) · chạm token budget → không đốt token vô ích.
+  - **Tích hợp executor:** bật `use_executor` thì evidence (ground truth) được đính vào self-audit từng vòng, và score cuối bị kéo xuống 0.15 nếu code FAIL / đẩy lên ≥0.7 nếu PASS — cùng logic với council.
+  - **Ký ức miễn dịch:** `memory_rules` + `history` đa lượt hoạt động y hệt council (bài học được tiêm vào draft).
+- **Tham số `mode` xuyên suốt:** `auto` (mặc định — council nếu ≥2 slot bật, OneTheosis nếu đúng 1) · `council` · `one`.
+  - Core: `theosis(..., mode=)` + `theosis_stream(..., mode=)` (stream trả final theo word-chunk ở mode one).
+  - CLI: `--mode one` (số vòng mặc định đọc `settings.one_rounds`).
+  - Server: field `mode` trong `/api/run` + `/v1/chat/completions` (cả stream SSE); shortcut `model: "onetheosis"` = ép mode one; `/v1/models` liệt kê thêm `onetheosis`.
+  - Config: `settings.mode` + `settings.one_rounds` trong `config.yaml`.
+  - UI: segmented control **Auto / Council / OneTheosis** ở sidebar; luồng hiển thị "tự chấm" mỗi vòng; trail có `mode`.
+
+### Fixed
+- **1 model trước đây bị skip audit hoàn toàn** (rounds=0, trả thẳng draft cho user). Nay auto mode chuyển sang OneTheosis nên single-model vẫn qua audit + enhance trước khi xuất.
+
+### Notes
+- Tương thích ngược: không truyền `mode` + ≥2 slot → hành vi hệt 2.14.0. Ép `mode: council` với 1 slot → giữ hành vi cũ (trả draft).
+- Event stream tái dùng schema council (`fanout_start/audit_done/patch_done/converged/done`) với `pairs = {slot: [slot]}` — UI cũ vẫn đọc được.
+- Test: 70 pass (8 test mới cho OneTheosis: auto-switch, ép mode, degrade, stream, endpoint shortcut, NDJSON events).
+
 ## [2.14.0] — 2026-06-24 · Sidebar nhiều box + Tóm tắt hội thoại dài
 
 ### Added
