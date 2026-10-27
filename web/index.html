@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Theosis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ─────────────────────────────────────────────────────────────
+     Theosis — gold leaf on iconographic ink.
+     Palette grounded in Orthodox icon gilding: deep blue-black ground,
+     warm bone text, gilt accent reserved for the unified answer.
+     Type: Cormorant (liturgical display) × IBM Plex (the machine).
+     ───────────────────────────────────────────────────────────── */
+  :root{
+    --ink:#0E0F16; --ink-2:#15161F; --ink-3:#1C1E2B;
+    --line:#2A2D40; --line-soft:#232635;
+    --vellum:#ECE7D8; --muted:#8B8DA0; --muted-2:#646678;
+    --gold:#D8B45A; --gold-deep:#B8923E; --gold-soft:rgba(216,180,90,.13);
+    --green:#8FCB7A; --rose:#E08A8A;
+    --display:'Cormorant Garamond', Georgia, serif;
+    --sans:'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+    --r:14px; --r-sm:9px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:var(--sans);background:var(--ink);color:var(--vellum);-webkit-font-smoothing:antialiased;line-height:1.55}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(60% 38% at 50% -8%, rgba(216,180,90,.10), transparent 70%)}
+  ::selection{background:var(--gold-soft);color:#fff}
+
+  .app{position:relative;z-index:1;display:grid;grid-template-columns:312px 1fr;height:100vh;overflow:hidden}
+
+  /* ── Sidebar / Council ─────────────────────────────────────── */
+  .rail{border-right:1px solid var(--line);background:linear-gradient(180deg,var(--ink-2),var(--ink));padding:26px 22px 30px;display:flex;flex-direction:column;gap:26px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .brand{display:flex;flex-direction:column;gap:6px}
+  .brand__mark{font-family:var(--display);font-weight:600;font-size:38px;letter-spacing:.5px;line-height:1;color:var(--vellum);display:flex;align-items:baseline;gap:10px}
+  .gilt{width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F4DD9A,var(--gold) 55%,var(--gold-deep));box-shadow:0 0 14px rgba(216,180,90,.5);align-self:center}
+  .brand__tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);max-width:230px;line-height:1.5}
+  .demo-pill{align-self:flex-start;margin-top:2px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold-deep);border-radius:999px;padding:3px 9px;display:none}
+  .demo-pill.show{display:inline-block}
+
+  .group__label{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-2);margin-bottom:11px}
+  .mode-seg{display:flex;gap:4px;background:var(--ink-3);border:1px solid var(--line);border-radius:var(--r-sm);padding:3px}
+  .mode-seg button{flex:1;font-family:var(--mono);font-size:10.5px;color:var(--muted);background:transparent;border:0;border-radius:6px;padding:6px 4px;cursor:pointer;transition:.15s}
+  .mode-seg button:hover{color:var(--vellum)}
+  .mode-seg button.is-active{color:var(--gold);background:var(--ink-1);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+  .voices{display:flex;flex-direction:column;gap:8px}
+  .voice-row{display:flex;align-items:center;gap:11px;padding:10px 12px;background:var(--ink-3);border:1px solid var(--line-soft);border-radius:var(--r-sm);cursor:pointer;transition:border-color .15s,background .15s}
+  .voice-row:hover{border-color:var(--line)}
+  .voice-row__dot{width:9px;height:9px;border-radius:50%;background:var(--c,#666);flex:none;box-shadow:0 0 9px -1px var(--c)}
+  .voice-row__txt{flex:1;min-width:0}
+  .voice-row__name{font-size:13.5px;font-weight:600;color:var(--vellum);display:flex;align-items:center}
+  .voice-row__model{font-family:var(--mono);font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .warn{margin-left:6px;font-size:11px;color:var(--gold);cursor:help}
+  .switch{position:relative;width:34px;height:19px;flex:none}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .switch__track{position:absolute;inset:0;background:#34384c;border-radius:999px;transition:background .18s}
+  .switch__track::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#0c0d13;transition:transform .18s}
+  .switch input:checked + .switch__track{background:var(--gold-deep)}
+  .switch input:checked + .switch__track::after{transform:translateX(15px);background:#1a160b}
+  .switch input:focus-visible + .switch__track{outline:2px solid var(--gold);outline-offset:2px}
+
+  .agg-row{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px dashed var(--gold-deep);border-radius:var(--r-sm);background:var(--gold-soft)}
+  .agg-row__dot{width:9px;height:9px;border-radius:50%;background:var(--gold);flex:none;box-shadow:0 0 10px rgba(216,180,90,.6)}
+  .agg-row__txt{flex:1;min-width:0}
+  .agg-row__name{font-size:13px;font-weight:600;display:flex;align-items:center}
+  .agg-row__model{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+
+  .stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:var(--r-sm);width:fit-content;overflow:hidden}
+  .stepper button{width:38px;height:36px;background:var(--ink-3);border:none;color:var(--vellum);font-size:18px;cursor:pointer;transition:background .15s}
+  .stepper button:hover{background:#262838}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed}
+  .stepper__val{min-width:42px;text-align:center;font-family:var(--mono);font-size:15px}
+  .hint{font-size:11.5px;color:var(--muted-2);margin-top:9px;line-height:1.5}
+
+  .rail__foot{margin-top:auto;font-size:11px;color:var(--muted-2);font-family:var(--mono);line-height:1.7}
+  .rail__foot a{color:var(--muted)}
+
+  /* ── Main ──────────────────────────────────────────────────── */
+  .main{display:flex;flex-direction:column;min-width:0;min-height:0}
+  .composer{padding:24px 34px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(21,22,31,.7),transparent)}
+  .composer__field{display:flex;gap:12px;align-items:flex-end;background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 14px 18px;transition:border-color .15s}
+  .composer__field:focus-within{border-color:var(--gold-deep)}
+  textarea#prompt{flex:1;background:none;border:none;resize:none;color:var(--vellum);font-family:var(--sans);font-size:16px;line-height:1.55;min-height:30px;max-height:200px;outline:none}
+  textarea#prompt::placeholder{color:var(--muted-2)}
+  .refine{flex:none;font-family:var(--sans);font-weight:600;font-size:14px;color:#1a160b;background:linear-gradient(180deg,#EBC96E,var(--gold) 45%,var(--gold-deep));border:none;border-radius:10px;padding:12px 22px;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 6px 18px -8px rgba(216,180,90,.7);transition:filter .15s,transform .05s;display:inline-flex;align-items:center;gap:9px}
+  .refine:hover{filter:brightness(1.06)}
+  .refine:active{transform:translateY(1px)}
+  .refine:disabled{filter:grayscale(.5) brightness(.8);cursor:not-allowed}
+  .refine__spin{width:13px;height:13px;border:2px solid rgba(26,22,11,.4);border-top-color:#1a160b;border-radius:50%;display:none;animation:spin .7s linear infinite}
+  .refine.is-running .refine__spin{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .cancel{flex:none;font-family:var(--sans);font-weight:600;font-size:14px;color:var(--vellum);background:var(--ink-3);border:1px solid var(--line);border-radius:10px;padding:12px 18px;cursor:pointer;transition:.15s;display:none}
+  .cancel.show{display:inline-flex;align-items:center;gap:8px}
+  .cancel:hover{border-color:var(--rose);color:#E8B0B0}
+  .composer__row{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .composer__note{font-size:11.5px;color:var(--muted-2)}
+  .composer__note.err{color:var(--rose)}
+  .attach{flex:none;background:none;border:1px solid var(--line);border-radius:10px;width:40px;height:40px;font-size:17px;cursor:pointer;color:var(--muted);transition:all .15s;align-self:flex-end}
+  .attach:hover{border-color:var(--gold);color:var(--gold)}
+  .attach-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+  .fchip{display:inline-flex;align-items:center;gap:8px;background:var(--ink-3);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--vellum);max-width:280px}
+  .fchip__kind{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold);border-radius:10px;padding:1px 6px;flex:none}
+  .fchip__name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fchip__x{cursor:pointer;color:var(--muted);font-size:15px;line-height:1;flex:none}
+  .fchip__x:hover{color:var(--rose)}
+  .fchip.warn{border-color:var(--rose)}
+  .attachments-line{font-family:var(--mono);font-size:11px;color:var(--green);margin:8px 0;padding-left:15px;position:relative}
+  .attachments-line::before{content:"📎";position:absolute;left:-2px}
+  .artifact-card{display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(216,180,90,.1),transparent);border:1px solid var(--gold);border-radius:var(--r-sm);padding:11px 14px;margin:8px 0}
+  .artifact-card__ic{font-size:20px}
+  .artifact-card__meta{flex:1;min-width:0}
+  .artifact-card__name{font-size:13px;color:var(--vellum);font-weight:600}
+  .artifact-card__sub{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:2px}
+  .artifact-card__dl{flex:none;font-family:var(--mono);font-size:11px;color:var(--ink);background:var(--gold);border:none;border-radius:7px;padding:6px 13px;cursor:pointer;text-decoration:none}
+  .artifact-card__dl:hover{background:var(--gold-deep)}
+  .user-bubble{align-self:flex-end;max-width:80%;margin:4px 0 14px auto;background:var(--gold);color:var(--ink);padding:11px 16px;border-radius:16px 16px 4px 16px;font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+  .turn-sep{height:1px;background:var(--line);margin:26px 0 20px;opacity:.6}
+  .newchat{flex:none;background:none;border:1px solid var(--line);border-radius:8px;padding:5px 12px;font-size:11.5px;color:var(--muted);cursor:pointer;transition:all .15s}
+  .newchat:hover{border-color:var(--gold);color:var(--gold)}
+  .box-new{float:right;background:none;border:1px solid var(--line);border-radius:6px;width:22px;height:20px;font-size:13px;line-height:1;color:var(--muted);cursor:pointer;padding:0}
+  .box-new:hover{border-color:var(--gold);color:var(--gold)}
+  .box-list{display:flex;flex-direction:column;gap:3px;max-height:210px;overflow-y:auto}
+  .box-row{display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--muted);transition:background .12s,color .12s}
+  .box-row:hover{background:var(--ink-3);color:var(--vellum)}
+  .box-row.active{background:var(--ink-3);color:var(--gold);border-left:2px solid var(--gold)}
+  .box-row__t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .box-row__x{opacity:0;font-size:14px;flex:none;line-height:1}
+  .box-row:hover .box-row__x{opacity:.55}
+  .box-row__x:hover{opacity:1;color:var(--rose)}
+  .assistant-bubble{align-self:flex-start;max-width:85%;margin:4px auto 14px 0;background:var(--ink-2);border:1px solid var(--line);color:var(--vellum);padding:11px 16px;border-radius:16px 16px 16px 4px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .chips{display:flex;gap:7px;margin-left:auto;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--ink-2);border:1px solid var(--line-soft);border-radius:999px;padding:5px 11px;cursor:pointer;transition:.15s}
+  .chip:hover{color:var(--gold);border-color:var(--gold-deep)}
+
+  .tabs{display:flex;gap:4px;padding:14px 34px 0}
+  .tab{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px 12px;cursor:pointer;transition:color .15s,border-color .15s}
+  .tab:hover{color:var(--vellum)}
+  .tab.is-active{color:var(--gold);border-color:var(--gold)}
+
+  .panel{flex:1;overflow-y:auto;min-height:0;padding:22px 34px 60px}
+  .panel[hidden]{display:none}
+
+  /* ── Pinned result bar (the answer, always reachable) ──────── */
+  .resultbar{position:sticky;top:0;z-index:5;margin:0 0 18px;padding:14px 17px;background:linear-gradient(180deg,rgba(216,180,90,.12),rgba(20,21,30,.97));backdrop-filter:blur(10px);border:1px solid var(--gold-deep);border-radius:var(--r);box-shadow:0 10px 34px -18px rgba(216,180,90,.45);animation:reveal .5s ease both}
+  .resultbar[hidden]{display:none}
+  .resultbar__top{display:flex;align-items:center;gap:12px;margin-bottom:9px;flex-wrap:wrap}
+  .resultbar__label{font-family:var(--display);font-weight:600;font-size:19px;color:var(--gold);display:flex;align-items:center;gap:9px}
+  .resultbar__meta{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.03em}
+  .resultbar__actions{margin-left:auto;display:flex;gap:8px}
+  .resultbar__body{font-size:15.5px;color:var(--vellum);line-height:1.62;white-space:pre-wrap;word-wrap:break-word}
+  .resultbar__body.is-collapsed{max-height:132px;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
+  .btn-mini{font-family:var(--mono);font-size:11.5px;color:var(--muted);background:var(--ink-3);border:1px solid var(--line);border-radius:7px;padding:6px 11px;cursor:pointer;transition:.15s}
+  .btn-mini:hover{color:var(--gold);border-color:var(--gold-deep)}
+  .btn-mini--gold{color:#1a160b;background:var(--gold);border:1px solid var(--gold)}
+  .btn-mini--gold:hover{filter:brightness(1.06);color:#1a160b}
+
+  /* ── Stream ────────────────────────────────────────────────── */
+  .empty{margin-top:9vh;text-align:center;color:var(--muted-2)}
+  .empty__icon{width:54px;height:54px;margin:0 auto 18px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center}
+  .empty__icon span{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 18px rgba(216,180,90,.6)}
+  .empty__title{font-family:var(--display);font-size:24px;color:var(--vellum);margin-bottom:6px}
+  .empty p{font-size:13.5px;max-width:380px;margin:0 auto}
+
+  .phase{display:flex;align-items:baseline;gap:12px;margin:26px 2px 13px}
+  .phase:first-child{margin-top:4px}
+  .phase__eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+  .phase__sub{font-family:var(--mono);font-size:11px;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .phase::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+  .voice{--c:#777;background:var(--ink-2);border:1px solid var(--line-soft);border-left:2px solid var(--c);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:14px 16px;margin-bottom:10px;animation:rise .35s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .voice__head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .voice__dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 8px -1px var(--c)}
+  .voice__name{font-weight:600;font-size:13.5px}
+  .voice__tag{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+  .verdict{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:2px 9px;border:1px solid currentColor}
+  .verdict--strong{color:var(--green)} .verdict--mixed{color:var(--gold)} .verdict--weak{color:var(--rose)}
+  .voice__body{font-size:14.5px;color:#DAD6C9;white-space:pre-wrap;word-wrap:break-word}
+  .voice__body.is-collapsed{max-height:210px;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 68%,transparent);mask-image:linear-gradient(180deg,#000 68%,transparent)}
+  .more{background:none;border:none;color:var(--gold);font-family:var(--mono);font-size:11.5px;cursor:pointer;padding:7px 0 1px;letter-spacing:.05em}
+  .more:hover{color:#EBC96E}
+  .voice--audit{background:transparent;border-style:dashed;opacity:.96}
+  .voice--audit .voice__body{font-family:var(--mono);font-size:12.5px;color:var(--muted);line-height:1.65}
+  .voice--audit .voice__name{font-weight:500;color:var(--vellum)}
+  .arrow{color:var(--muted-2);margin:0 5px}
+
+  .running{display:flex;align-items:center;gap:11px;color:var(--muted);font-size:13px;padding:9px 2px 4px;font-family:var(--mono)}
+  .running__pulse{width:9px;height:9px;border-radius:50%;background:var(--muted);animation:breathe 1.2s ease-in-out infinite}
+  .running--gold .running__pulse{background:var(--gold);box-shadow:0 0 12px rgba(216,180,90,.7)}
+  .running--gold{color:var(--gold)}
+  @keyframes breathe{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+
+  .marker{display:flex;align-items:center;gap:9px;color:var(--gold);font-family:var(--mono);font-size:12px;padding:10px 2px 2px;margin-top:4px}
+  .stopped{color:var(--muted);font-family:var(--mono);font-size:12.5px;padding:10px 2px}
+  @keyframes reveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .errcard{border:1px solid #6b3b3b;background:rgba(140,70,70,.12);border-radius:var(--r-sm);padding:14px 16px;color:#E8B0B0;font-size:13.5px;margin-top:10px}
+  .errcard b{color:#F0C4C4}
+  .errcard code{font-family:var(--mono);font-size:12px;color:var(--gold)}
+
+  /* ── API panel ─────────────────────────────────────────────── */
+  .api__lead{font-size:14px;color:var(--muted);max-width:640px;margin:2px 0 18px}
+  .api__lead b{color:var(--vellum);font-weight:600}
+  .endpoint{display:flex;align-items:center;gap:12px;background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:22px;flex-wrap:wrap}
+  .endpoint__k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2)}
+  .endpoint__v{font-family:var(--mono);font-size:13.5px;color:var(--gold)}
+  .seg{display:flex;gap:4px;margin-bottom:14px}
+  .seg button{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--ink-3);border:1px solid var(--line-soft);border-radius:999px;padding:6px 14px;cursor:pointer;transition:.15s}
+  .seg button:hover{color:var(--vellum)}
+  .seg button.is-active{color:#1a160b;background:var(--gold);border-color:var(--gold)}
+  .code{position:relative;background:#0a0b11;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+  .code pre{margin:0;padding:18px 16px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.7;color:#CBC9BE}
+  .copy{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--ink-3);border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer;transition:.15s}
+  .copy:hover{color:var(--gold);border-color:var(--gold-deep)}
+  .api__more{margin-top:20px;font-size:13px;color:var(--muted)}
+  .api__more code{font-family:var(--mono);font-size:12px;color:var(--gold);background:var(--gold-soft);padding:2px 6px;border-radius:5px}
+
+  @media (max-width:920px){
+    .app{grid-template-columns:1fr;height:auto;overflow:visible}
+    .rail{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+    .main{min-height:auto}
+    .panel{overflow:visible}
+    .composer,.tabs,.panel{padding-left:20px;padding-right:20px}
+    .chips{margin-left:0;width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+  /* ── Add-model button + remove + modal ─────────────────────── */
+  .add-model{margin-top:9px;width:100%;font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--ink-3);border:1px dashed var(--line);border-radius:var(--r-sm);padding:9px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .add-model:hover{color:var(--gold);border-color:var(--gold-deep)}
+  .voice-row__rm{flex:none;width:22px;height:22px;border:none;background:none;color:var(--muted-2);font-size:16px;cursor:pointer;border-radius:6px;transition:.15s;line-height:1;padding:0}
+  .voice-row__rm:hover{color:var(--rose);background:rgba(224,138,138,.12)}
+
+  .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(6,7,11,.66);backdrop-filter:blur(3px)}
+  .modal.show{display:flex;animation:reveal .25s ease both}
+  .modal__card{width:min(480px,100%);max-height:90vh;overflow-y:auto;background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r);padding:24px;box-shadow:0 30px 80px -30px rgba(0,0,0,.8)}
+  .modal__title{font-family:var(--display);font-weight:600;font-size:25px;color:var(--vellum);margin:0 0 4px}
+  .modal__sub{font-size:12.5px;color:var(--muted);margin:0 0 20px;line-height:1.5}
+  .modal__sub code{font-family:var(--mono);font-size:11.5px;color:var(--gold)}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2);margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;background:var(--ink-3);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--vellum);font-family:var(--sans);font-size:14px;padding:10px 12px;outline:none;transition:border-color .15s}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold-deep)}
+  .field input::placeholder{color:var(--muted-2)}
+  .field textarea{resize:vertical;min-height:52px;font-size:13px}
+  .field--key input{font-family:var(--mono);font-size:13px}
+  .field__hint{font-size:11px;color:var(--muted-2);margin-top:5px}
+  .modal__err{color:var(--rose);font-size:12.5px;margin:2px 0 12px;min-height:1px}
+  .modal__actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+  .btn-ghost{font-family:var(--sans);font-weight:600;font-size:14px;color:var(--muted);background:none;border:1px solid var(--line);border-radius:10px;padding:11px 18px;cursor:pointer;transition:.15s}
+  .btn-ghost:hover{color:var(--vellum);border-color:var(--muted-2)}
+  .btn-gold{font-family:var(--sans);font-weight:600;font-size:14px;color:#1a160b;background:linear-gradient(180deg,#EBC96E,var(--gold) 45%,var(--gold-deep));border:none;border-radius:10px;padding:11px 22px;cursor:pointer;transition:filter .15s}
+  .btn-gold:hover{filter:brightness(1.06)}
+  .btn-gold:disabled{filter:grayscale(.5) brightness(.8);cursor:not-allowed}
+
+  .strat-select{width:100%;padding:9px 11px;background:var(--ink-3);border:1px solid var(--line-soft);border-radius:var(--r-sm);color:var(--vellum);font-family:var(--sans);font-size:13px;cursor:pointer;appearance:none}
+  .strat-select:focus{border-color:var(--gold)}
+
+  .route-card{background:linear-gradient(180deg,rgba(201,162,39,.10),rgba(201,162,39,.03));border:1px solid var(--gold);border-radius:var(--r-sm);padding:11px 13px;margin:2px 0}
+  .route-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--gold)}
+  .route-mark{font-size:14px}
+  .route-meta{color:var(--muted);letter-spacing:.02em}
+  .route-slots{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .route-chip{font-family:var(--mono);font-size:11px;padding:2px 9px;border:1px solid var(--gold);border-radius:20px;color:var(--gold)}
+  .route-reason{font-size:12px;color:var(--muted);margin-top:7px;font-style:italic}
+
+  .mem-card{background:linear-gradient(180deg,rgba(143,203,122,.12),rgba(143,203,122,.03));border:1px solid var(--green);border-radius:var(--r-sm);padding:11px 13px;margin:2px 0}
+  .mem-head{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--green)}
+  .mem-list{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+  .mem-item{font-size:12.5px;color:var(--vellum);padding-left:15px;position:relative;line-height:1.45}
+  .mem-item::before{content:"›";position:absolute;left:3px;color:var(--green)}
+  .count-badge{font-family:var(--mono);font-size:10px;color:var(--green);border:1px solid var(--green);border-radius:20px;padding:0 7px;margin-left:7px;opacity:.85}
+  .teach{margin-top:13px;border-top:1px dashed var(--line);padding-top:12px}
+  .teach>summary{font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;list-style:none;user-select:none}
+  .teach>summary::-webkit-details-marker{display:none}
+  .teach>summary::before{content:"✎ ";color:var(--green)}
+  .teach>summary:hover{color:var(--green)}
+  .teach__box{margin-top:10px;display:flex;flex-direction:column;gap:9px}
+  .teach textarea{width:100%;min-height:56px;resize:vertical;background:var(--ink-3);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:var(--sans);font-size:13px;color:var(--vellum);outline:none}
+  .teach textarea:focus{border-color:var(--green)}
+  .teach__act{display:flex;align-items:center;gap:11px}
+  .teach__hint{font-size:11px;color:var(--muted)}
+
+  .learn-card{background:linear-gradient(180deg,rgba(216,180,90,.14),rgba(216,180,90,.03));border:1px solid var(--gold);border-radius:var(--r-sm);padding:11px 13px;margin:2px 0}
+  .learn-head{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:var(--gold)}
+  .learn-rule{font-size:12.5px;color:var(--vellum);margin-top:7px;padding-left:15px;position:relative;line-height:1.45}
+  .learn-rule::before{content:"✦";position:absolute;left:2px;color:var(--gold)}
+  .learn-src{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:5px}
+
+  .mem-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .mem-bar__title{font-family:var(--display);font-size:20px;color:var(--vellum);display:flex;align-items:center}
+  .mem-bar__actions{display:flex;gap:8px}
+  .mem-bar__hint{font-size:12.5px;color:var(--muted);margin:8px 0 16px;line-height:1.5;max-width:72ch}
+  .rule-list{display:flex;flex-direction:column;gap:11px}
+  .rule-empty{font-size:13px;color:var(--muted);font-style:italic;padding:24px 0;text-align:center}
+  .rule{border:1px solid var(--line);border-radius:var(--r-sm);padding:13px 15px;background:var(--ink-2)}
+  .rule.unverified{border-left:3px solid var(--gold)}
+  .rule.verified{border-left:3px solid var(--green)}
+  .rule__top{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
+  .rule__guide{font-size:14px;color:var(--vellum);line-height:1.5;flex:1}
+  .rule__badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:20px;white-space:nowrap;flex:none}
+  .rule__badge.v{color:var(--green);border:1px solid var(--green)}
+  .rule__badge.u{color:var(--gold);border:1px solid var(--gold)}
+  .rule__meta{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:9px;display:flex;gap:12px;flex-wrap:wrap}
+  .rule__acts{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+  .rule__edit{width:100%;margin-top:10px;min-height:52px;resize:vertical;background:var(--ink-3);border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-family:var(--sans);font-size:13px;color:var(--vellum);outline:none}
+  .rule__edit:focus{border-color:var(--gold)}
+  .rbtn{font-family:var(--mono);font-size:11px;padding:4px 11px;border-radius:7px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;transition:all .15s}
+  .rbtn:hover{color:var(--vellum);border-color:var(--muted)}
+  .rbtn--v{color:var(--green);border-color:rgba(143,203,122,.4)}
+  .rbtn--v:hover{background:rgba(143,203,122,.12);border-color:var(--green)}
+  .rbtn--del{color:var(--rose);border-color:rgba(224,138,138,.35)}
+  .rbtn--del:hover{background:rgba(224,138,138,.1);border-color:var(--rose)}
+  .rule.demoted{opacity:.62}
+  .rule.demoted .rule__guide{text-decoration:line-through;text-decoration-color:var(--rose)}
+  .rule__badges{display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex:none}
+  .rule__badge.d{color:var(--rose);border:1px solid var(--rose)}
+  .rule__score{color:var(--green)}
+  .rule__score.neg{color:var(--rose)}
+
+  .stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:20px}
+  .stat-card{border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 15px;background:var(--ink-2)}
+  .stat-card__n{font-family:var(--display);font-size:30px;line-height:1;color:var(--gold)}
+  .stat-card__l{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--muted);margin-top:7px;text-transform:uppercase}
+  .stat-sec{margin:18px 0}
+  .stat-sec__h{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--vellum);margin-bottom:10px}
+  .health{display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .health span{display:block}
+  .health .h-good{background:rgba(143,203,122,.55)}
+  .health .h-neu{background:rgba(120,120,130,.4)}
+  .health .h-bad{background:rgba(224,138,138,.55)}
+  .health-legend{display:flex;gap:16px;margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+  .health-legend i{font-style:normal;display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .srow{display:flex;align-items:center;gap:10px;margin:5px 0;font-size:12.5px;color:var(--vellum)}
+  .srow__bar{height:9px;border-radius:5px;background:var(--gold);opacity:.75;flex:none}
+  .srow__k{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:128px}
+  .srow__v{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .toprow{display:flex;gap:10px;align-items:baseline;margin:5px 0;font-size:12.5px;color:var(--vellum)}
+  .toprow__u{font-family:var(--mono);color:var(--gold);min-width:38px;text-align:right}
+  .chart{display:flex;align-items:flex-end;gap:4px;height:90px;padding-top:6px}
+  .chart__col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;min-width:0}
+  .chart__bar{width:100%;max-width:26px;background:var(--gold);opacity:.7;border-radius:3px 3px 0 0;min-height:2px}
+  .chart__bar.green{background:var(--green)}
+  .chart__lbl{font-family:var(--mono);font-size:8.5px;color:var(--muted);white-space:nowrap;transform:rotate(-45deg);transform-origin:top right;margin-top:4px}
+  .chart__val{font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .stat-meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6}
+
+  .exec-row{display:flex;align-items:center;gap:11px;padding:10px 12px;background:var(--ink-3);border:1px solid var(--line-soft);border-radius:var(--r-sm);cursor:pointer}
+  .exec-row__txt{flex:1;min-width:0}
+  .exec-row__name{font-size:13px;font-weight:600;color:var(--vellum)}
+  .exec-row__warn{display:block;font-family:var(--mono);font-size:10px;color:var(--gold);margin-top:2px;line-height:1.4}
+  .evidence{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;padding:7px 2px;color:var(--muted)}
+  .evidence.pass{color:var(--green)}
+  .evidence.fail{color:var(--rose)}
+
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ───────── Council / control rail ───────── -->
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand__mark"><span class="gilt"></span>Theosis</div>
+      <div class="brand__tag">Một council các model audit chéo nhau thành một câu trả lời</div>
+      <span class="demo-pill" id="demoPill">Demo · model giả lập</span>
+    </div>
+
+    <div>
+      <div class="group__label">Hội thoại <button class="box-new" id="boxNew" title="Hội thoại mới">＋</button></div>
+      <div class="box-list" id="boxList"></div>
+    </div>
+
+    <div>
+      <div class="group__label">Council</div>
+      <div class="voices" id="voices"></div>
+      <button class="add-model" id="addModelBtn">＋ Thêm model</button>
+    </div>
+
+    <div>
+      <div class="group__label">Tổng hợp</div>
+      <div class="agg-row" id="aggRow">
+        <span class="agg-row__dot"></span>
+        <div class="agg-row__txt">
+          <div class="agg-row__name" id="aggName">aggregator</div>
+          <div class="agg-row__model" id="aggModel">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="group__label">Chế độ</div>
+      <div class="mode-seg" id="modeSeg">
+        <button class="is-active" data-mode="auto" title="Council nếu ≥2 model · OneTheosis nếu 1">Auto</button>
+        <button data-mode="council" title="Fan-out → audit chéo → vá → hợp nhất">Council</button>
+        <button data-mode="one" title="1 model: tự audit → enhance ×3 trước khi xuất">OneTheosis</button>
+      </div>
+      <div class="hint" id="modeHint">Auto: council nếu ≥2 model · OneTheosis nếu 1 model.</div>
+    </div>
+
+    <div>
+      <div class="group__label">Số vòng audit</div>
+      <div class="stepper">
+        <button id="rMinus" aria-label="Giảm">–</button>
+        <span class="stepper__val" id="rVal">2</span>
+        <button id="rPlus" aria-label="Tăng">+</button>
+      </div>
+      <div class="hint">Mỗi vòng: chấm chéo → tự vá. Nhiều vòng = kỹ hơn nhưng tốn hơn.</div>
+    </div>
+
+    <div>
+      <div class="group__label">Định tuyến</div>
+      <label class="exec-row">
+        <span class="exec-row__txt">
+          <span class="exec-row__name">Tự định tuyến (router)</span>
+          <span class="exec-row__warn" style="color:var(--muted)">model tự chọn model + chiến lược + vòng cho mỗi câu</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="routerToggle"/><span class="switch__track"></span></span>
+      </label>
+    </div>
+
+    <div>
+      <div class="group__label">Ký ức miễn dịch <span class="count-badge" id="memCount" style="display:none">0</span></div>
+      <label class="exec-row">
+        <span class="exec-row__txt">
+          <span class="exec-row__name">Dùng ký ức</span>
+          <span class="exec-row__warn" style="color:var(--muted)">chèn bài học đã rút từ lỗi trước (rule trừu tượng, content-free)</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="memToggle"/><span class="switch__track"></span></span>
+      </label>
+      <label class="exec-row">
+        <span class="exec-row__txt">
+          <span class="exec-row__name">Tự học từ lỗi</span>
+          <span class="exec-row__warn" style="color:var(--muted)">executor bắt câu SAI → tự rút rule (cần bật executor)</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="autoLearnToggle"/><span class="switch__track"></span></span>
+      </label>
+      <label class="exec-row">
+        <span class="exec-row__txt">
+          <span class="exec-row__name">Chỉ dùng rule đã duyệt</span>
+          <span class="exec-row__warn" style="color:var(--muted)">cổng chất lượng — bỏ qua rule chưa duyệt khi tiêm</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="verifiedOnlyToggle"/><span class="switch__track"></span></span>
+      </label>
+    </div>
+
+    <div>
+      <div class="group__label">Hội thoại</div>
+      <label class="exec-row">
+        <span class="exec-row__txt">
+          <span class="exec-row__name">Tóm tắt hội thoại dài</span>
+          <span class="exec-row__warn" style="color:var(--muted)">lịch sử dài → nén lượt cũ thành tóm tắt (chặn phình token)</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="summarizeToggle"/><span class="switch__track"></span></span>
+      </label>
+    </div>
+
+    <div>
+      <div class="group__label">Chiến lược chấm</div>
+      <select id="stratSelect" class="strat-select">
+        <option value="round_robin">Vòng tròn (round-robin)</option>
+        <option value="all_vs_all">Tất cả chấm tất cả</option>
+        <option value="star">Một giám khảo (star)</option>
+      </select>
+      <div class="hint">round-robin: mỗi câu bị "Người chấm / câu" model soi · all-vs-all: mọi model soi nhau (kỹ, tốn) · star: 1 model soi hết.</div>
+    </div>
+
+    <div>
+      <div class="group__label">Người chấm / câu</div>
+      <div class="stepper">
+        <button id="aMinus" aria-label="Giảm">–</button>
+        <span class="stepper__val" id="aVal">1</span>
+        <button id="aPlus" aria-label="Tăng">+</button>
+      </div>
+      <div class="hint">M-of-N: mỗi câu trả lời bị bao nhiêu model soi. Tối đa = số model − 1.</div>
+    </div>
+
+    <div>
+      <div class="group__label">Kiểm chứng</div>
+      <label class="exec-row">
+        <span class="exec-row__txt">
+          <span class="exec-row__name">Chạy code để kiểm chứng</span>
+          <span class="exec-row__warn">⚠ chạy code do model sinh — chỉ bật trên máy bạn tin</span>
+        </span>
+        <span class="switch"><input type="checkbox" id="execToggle"/><span class="switch__track"></span></span>
+      </label>
+    </div>
+
+    <div class="rail__foot">
+      Theosis v1 · OpenAI-compatible<br/>
+      <a href="/health" target="_blank">/health</a> · <a href="/v1/models" target="_blank">/v1/models</a>
+    </div>
+  </aside>
+
+  <!-- ───────── Main ───────── -->
+  <main class="main">
+    <div class="composer">
+      <div class="composer__field">
+        <button class="attach" id="attachBtn" title="Đính kèm file (mọi định dạng)">📎</button>
+        <input type="file" id="fileInput" multiple hidden />
+        <textarea id="prompt" rows="1" placeholder="Hỏi bất cứ điều gì. Theosis sẽ đưa qua council, audit chéo rồi tinh luyện thành một câu trả lời."></textarea>
+        <button class="refine" id="refine"><span class="refine__spin"></span><span id="refineLabel">Tinh luyện</span></button>
+        <button class="cancel" id="cancel">Dừng</button>
+      </div>
+      <div class="attach-row" id="attachRow" hidden></div>
+      <div class="composer__row">
+        <span class="composer__note" id="note">Enter để gửi · Shift+Enter xuống dòng · 📎 đính kèm cho cả council đọc</span>
+        <button class="newchat" id="newChat" title="Xoá lịch sử, bắt đầu cuộc trò chuyện mới">＋ Trò chuyện mới</button>
+        <span class="chips" id="chips">
+          <button class="chip" data-fill="Giải thích đệ quy cho người mới, kèm một ví dụ ngắn.">Giải thích</button>
+          <button class="chip" data-fill="Review đoạn code này và chỉ ra lỗi tiềm ẩn:&#10;&#10;def add(a, b):&#10;    return a - b">Review code</button>
+          <button class="chip" data-fill="So sánh REST và GraphQL: ưu nhược điểm và khi nào nên dùng cái nào.">So sánh</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab is-active" data-tab="stream">Luồng tinh luyện</button>
+      <button class="tab" data-tab="memory">Ký ức</button>
+      <button class="tab" data-tab="stats">Thống kê</button>
+      <button class="tab" data-tab="api">API</button>
+    </div>
+
+    <!-- Stream -->
+    <section class="panel" id="streamPanel">
+      <div class="resultbar" id="resultbar" hidden>
+        <div class="resultbar__top">
+          <span class="resultbar__label"><span class="gilt"></span>Câu trả lời tinh luyện</span>
+          <span class="resultbar__meta" id="resultMeta"></span>
+          <span class="resultbar__actions">
+            <button class="btn-mini" id="resultExpand" style="display:none">Mở rộng</button>
+            <button class="btn-mini btn-mini--gold" id="resultCopy">Sao chép</button>
+          </span>
+        </div>
+        <div class="resultbar__body" id="resultBody"></div>
+        <details class="teach" id="teach">
+          <summary>Dạy bài học — câu này chưa đúng?</summary>
+          <div class="teach__box">
+            <textarea id="teachInput" placeholder="Sai ở đâu / cần sửa gì? Theosis sẽ rút thành một bài học CHUNG (không lưu nội dung gốc) để lần sau tránh."></textarea>
+            <div class="teach__act">
+              <button class="btn-mini btn-mini--gold" id="teachBtn">Ghi nhớ bài học</button>
+              <span class="teach__hint" id="teachHint">chỉ rule trừu tượng được lưu — content-free</span>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div id="stream">
+        <div class="empty" id="empty">
+          <div class="empty__icon"><span></span></div>
+          <div class="empty__title">Luồng đang trống</div>
+          <p>Gửi một câu hỏi để triệu tập council. Bạn sẽ thấy từng model trả lời, chấm chéo nhau, rồi hợp nhất thành câu trả lời mạ vàng.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- API -->
+    <section class="panel" id="apiPanel" hidden>
+      <p class="api__lead"><b>Theosis nói chuẩn OpenAI API.</b> Trỏ bất kỳ client nào vào endpoint dưới đây, đặt <code>model</code> = <code>theosis-v1</code>. Vì là OpenAI-compatible, bạn có thể dùng chính Theosis làm một slot bên trong một Theosis khác.</p>
+      <div class="endpoint"><span class="endpoint__k">Base URL</span><span class="endpoint__v" id="epUrl">—</span></div>
+      <div class="seg" id="seg">
+        <button class="is-active" data-snip="curl">curl</button>
+        <button data-snip="python">Python</button>
+        <button data-snip="openai">OpenAI SDK</button>
+      </div>
+      <div class="code">
+        <button class="copy" id="copyBtn">Sao chép</button>
+        <pre id="snippet">—</pre>
+      </div>
+      <p class="api__more">Tham số riêng của Theosis: thêm <code>"max_rounds": 3</code> vào body để chỉnh số vòng audit cho từng request.</p>
+    </section>
+
+    <!-- Memory / review -->
+    <section class="panel" id="memoryPanel" hidden>
+      <div class="mem-bar">
+        <div class="mem-bar__title">Ký ức miễn dịch <span class="count-badge" id="memCount2">0</span></div>
+        <div class="mem-bar__actions">
+          <button class="btn-mini" id="memRefresh">Tải lại</button>
+          <button class="btn-mini" id="memClear">Xoá tất cả</button>
+        </div>
+      </div>
+      <p class="mem-bar__hint">Rule <b>đã duyệt</b> ✓ mới được tiêm khi bật "Chỉ dùng rule đã duyệt". Rule auto-learn vào ở trạng thái <b>chưa duyệt</b> — hãy xem, sửa, rồi duyệt hoặc xoá.</p>
+      <div id="ruleList" class="rule-list"></div>
+    </section>
+
+    <!-- Stats / dashboard -->
+    <section class="panel" id="statsPanel" hidden>
+      <div class="mem-bar">
+        <div class="mem-bar__title">Thống kê ký ức</div>
+        <div class="mem-bar__actions"><button class="btn-mini" id="statsRefresh">Tải lại</button></div>
+      </div>
+      <p class="mem-bar__hint">Tổng quan sức khỏe ký ức theo thời gian. Mọi số liệu đều content-free (chỉ đếm/điểm, không nội dung gốc).</p>
+      <div id="statsBody"><div class="rule-empty">Đang tải…</div></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal__card">
+    <h2 class="modal__title">Thêm model</h2>
+    <p class="modal__sub">Mỗi model là một endpoint OpenAI-compatible. Key lưu ở <code>slots.local.yaml</code> (đã gitignore), không vào config.yaml.</p>
+    <div class="field">
+      <label>Nhà cung cấp</label>
+      <select id="mProvider"></select>
+    </div>
+    <div class="field"><label>Tên slot</label><input id="mName" placeholder="vd: opus, grok, llama-local" /></div>
+    <div class="field"><label>Model ID</label><input id="mModel" placeholder="vd: gpt-4o" /></div>
+    <div class="field"><label>Base URL</label><input id="mBase" placeholder="https://.../v1" /></div>
+    <div class="field field--key"><label>API key</label><input id="mKey" type="password" placeholder="dán key…" /><div class="field__hint" id="mKeyHint">Key lưu ở slots.local.yaml (gitignored).</div></div>
+    <div class="field"><label>System prompt (tuỳ chọn)</label><textarea id="mSystem" placeholder="vd: Bạn nghiêm ngặt, chính xác."></textarea></div>
+    <div class="modal__err" id="mErr"></div>
+    <div class="modal__actions">
+      <button class="btn-ghost" id="mCancel">Hủy</button>
+      <button class="btn-gold" id="mAdd">Thêm vào council</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const PALETTE = ["#A98AE0","#57C2B0","#E08AA0","#7FA8E0","#8FCB7A","#E0A85A"];
+  const GOLD = "#D8B45A";
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const $ = (s) => document.querySelector(s);
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const esc = (s) => (s ?? "").replace(/[&<>]/g, (m) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[m]));
+
+  const stream = $("#stream");
+  const refineBtn = $("#refine");
+  const cancelBtn = $("#cancel");
+  const promptEl = $("#prompt");
+  const note = $("#note");
+
+  let colorOf = {};
+  let rounds = 2;
+  let mode = "auto";
+  const MODE_HINTS = {
+    auto: "Auto: council nếu ≥2 model · OneTheosis nếu 1 model.",
+    council: "Council: các model audit chéo nhau rồi hợp nhất. Cần ≥2 model.",
+    one: "OneTheosis: model đầu tiên đang bật tự audit → enhance (theo số vòng) trước khi xuất.",
+  };
+  let auditors = 1;
+  let useExecutor = false;
+  let useRouter = false;
+  let useMemory = false;
+  let autoLearn = false;
+  let verifiedOnly = false;
+  let summarizeHistory = false;
+  let attachedFiles = [];   // [{token, filename, kind}]
+  let conversation = [];    // [{role, content}] — lịch sử đa lượt của box hiện tại
+  let pendingFinal = "";
+  let strategy = "round_robin";
+  let busy = false;
+  let controller = null;     // AbortController của lần chạy hiện tại
+  let startedAt = 0;
+  let modelCount = 0;
+  let lastAnswer = "";
+  let lastPrompt = "";
+
+  // ── auto-grow textarea ──
+  const grow = () => { promptEl.style.height = "auto"; promptEl.style.height = Math.min(promptEl.scrollHeight, 200) + "px"; };
+  promptEl.addEventListener("input", grow);
+
+  // ── example chips ──
+  document.querySelectorAll("#chips .chip").forEach((c) => c.onclick = () => { promptEl.value = c.dataset.fill; grow(); promptEl.focus(); });
+
+  // ── file attach (tri giác: mọi định dạng → text chia chung cho council) ──
+  $("#attachBtn").onclick = () => $("#fileInput").click();
+  $("#fileInput").onchange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const fd = new FormData();
+    files.forEach((f) => fd.append("files", f));
+    $("#attachBtn").disabled = true;
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        (data.files || []).forEach((f) => attachedFiles.push(f));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        flashNote(err.detail || "Upload thất bại.", true);
+      }
+    } catch (_) { flashNote("Upload lỗi mạng.", true); }
+    $("#attachBtn").disabled = false;
+    $("#fileInput").value = "";
+    renderAttachRow();
+  };
+
+  function renderAttachRow() {
+    const row = $("#attachRow");
+    row.hidden = attachedFiles.length === 0;
+    row.innerHTML = "";
+    attachedFiles.forEach((f, idx) => {
+      const chip = el("div", "fchip" + (f.needs_vision ? " warn" : ""));
+      chip.innerHTML = `<span class="fchip__kind">${esc(f.kind)}</span>`
+        + `<span class="fchip__name" title="${esc(f.filename)}">${esc(f.filename)}</span>`
+        + `<span class="fchip__x" data-i="${idx}">×</span>`;
+      chip.querySelector(".fchip__x").onclick = () => { attachedFiles.splice(idx, 1); renderAttachRow(); };
+      row.appendChild(chip);
+    });
+  }
+
+  function flashNote(msg, isErr) {
+    const n = $("#note");
+    const prev = n.textContent;
+    n.textContent = msg;
+    n.classList.toggle("err", !!isErr);
+    setTimeout(() => { n.textContent = prev; n.classList.remove("err"); }, 4000);
+  }
+
+  // ── conversation boxes (localStorage; trang served nên localStorage hoạt động) ──
+  const BOXES_KEY = "theosis_boxes_v1", ACTIVE_KEY = "theosis_active_v1";
+  const MAX_BOXES = 40, MAX_TURNS_PER_BOX = 60;
+  let boxes = [], activeId = null;
+
+  function boxTitle(turns) {
+    const fu = (turns || []).find((t) => t.role === "user");
+    const raw = fu ? fu.content.trim().replace(/\s+/g, " ") : "";
+    if (!raw) return "Hội thoại mới";
+    return raw.length > 42 ? raw.slice(0, 42) + "…" : raw;
+  }
+  function capBoxes(list) {
+    return (list || []).slice(0, MAX_BOXES).map((b) => ({
+      id: b.id, title: b.title, updatedAt: b.updatedAt || 0,
+      turns: (b.turns || []).slice(-MAX_TURNS_PER_BOX),
+    }));
+  }
+  function loadBoxes() {
+    try { return capBoxes(JSON.parse(localStorage.getItem(BOXES_KEY) || "[]")); }
+    catch (_) { return []; }
+  }
+  function persistBoxes() {
+    try {
+      localStorage.setItem(BOXES_KEY, JSON.stringify(capBoxes(boxes)));
+      localStorage.setItem(ACTIVE_KEY, activeId || "");
+    } catch (_) {}
+  }
+  const activeBox = () => boxes.find((b) => b.id === activeId);
+
+  function clearStreamToEmpty() {
+    pendingFinal = "";
+    $("#resultbar").hidden = true;
+    promptEl.value = ""; grow();
+    stream.innerHTML =
+      '<div class="empty" id="empty"><div class="empty__icon"><span></span></div>'
+      + '<div class="empty__title">Luồng đang trống</div>'
+      + '<p>Gửi một câu hỏi để triệu tập council. Bạn sẽ thấy từng model trả lời, chấm chéo nhau, rồi hợp nhất thành câu trả lời mạ vàng.</p></div>';
+  }
+
+  function newBox() {
+    if (busy) return;
+    const b = { id: "b_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                title: "Hội thoại mới", turns: [], updatedAt: Date.now() };
+    boxes.unshift(b);
+    activeId = b.id;
+    conversation = b.turns;
+    attachedFiles = []; renderAttachRow();
+    persistBoxes(); renderBoxes(); clearStreamToEmpty();
+  }
+
+  function switchBox(id) {
+    if (busy) return;
+    const b = boxes.find((x) => x.id === id);
+    if (!b) return;
+    activeId = id; conversation = b.turns;
+    attachedFiles = []; renderAttachRow();
+    persistBoxes(); renderBoxes(); renderConversation(b.turns);
+  }
+
+  function deleteBox(id) {
+    if (busy) return;
+    boxes = boxes.filter((b) => b.id !== id);
+    if (activeId === id) {
+      if (boxes.length) { activeId = boxes[0].id; conversation = boxes[0].turns; renderConversation(boxes[0].turns); }
+      else { newBox(); return; }
+    }
+    persistBoxes(); renderBoxes();
+  }
+
+  function saveActiveTurns() {
+    let b = activeBox();
+    if (!b) return;
+    b.turns = conversation;
+    b.updatedAt = Date.now();
+    if (b.title === "Hội thoại mới") b.title = boxTitle(conversation);
+    boxes = [b, ...boxes.filter((x) => x.id !== b.id)];   // đưa box vừa dùng lên đầu
+    persistBoxes(); renderBoxes();
+  }
+
+  function renderBoxes() {
+    const list = $("#boxList");
+    if (!list) return;
+    list.innerHTML = "";
+    boxes.forEach((b) => {
+      const row = el("div", "box-row" + (b.id === activeId ? " active" : ""));
+      row.innerHTML = `<span class="box-row__t" title="${esc(b.title)}">${esc(b.title)}</span><span class="box-row__x" title="Xoá">×</span>`;
+      row.querySelector(".box-row__t").onclick = () => switchBox(b.id);
+      row.querySelector(".box-row__x").onclick = (e) => { e.stopPropagation(); deleteBox(b.id); };
+      list.appendChild(row);
+    });
+  }
+
+  function renderConversation(turns) {
+    $("#empty")?.remove();
+    stream.innerHTML = "";
+    $("#resultbar").hidden = true;
+    if (!turns || !turns.length) { clearStreamToEmpty(); return; }
+    let lastFinal = "";
+    turns.forEach((t) => {
+      if (t.role === "user") stream.appendChild(el("div", "user-bubble", esc(t.content)));
+      else { stream.appendChild(el("div", "assistant-bubble", esc(t.content))); lastFinal = t.content; }
+    });
+    if (lastFinal) showResult(lastFinal, null);
+    scrollEnd();
+  }
+
+  function initBoxes() {
+    boxes = loadBoxes();
+    const savedActive = (() => { try { return localStorage.getItem(ACTIVE_KEY); } catch (_) { return null; } })();
+    if (!boxes.length) { newBox(); return; }
+    activeId = boxes.find((b) => b.id === savedActive) ? savedActive : boxes[0].id;
+    conversation = activeBox().turns;
+    renderBoxes();
+    renderConversation(conversation);
+  }
+
+  $("#boxNew").onclick = newBox;
+  $("#newChat").onclick = newBox;
+
+  // ── load config ──
+  async function loadConfig() {
+    try {
+      const c = await (await fetch("/api/config")).json();
+      (c.slots || []).forEach((s, i) => { colorOf[s.name] = PALETTE[i % PALETTE.length]; });
+      renderVoices(c.slots || []);
+      const agg = c.aggregator || {};
+      $("#aggName").innerHTML = esc(agg.name || "aggregator") + warnBadge(agg);
+      $("#aggModel").textContent = agg.model || "—";
+      rounds = (c.settings && c.settings.max_rounds) || 2;
+      setRounds(rounds);
+      setAuditors((c.settings && c.settings.auditors_per_answer) || 1);
+      useExecutor = !!(c.settings && c.settings.use_executor);
+      $("#execToggle").checked = useExecutor;
+      strategy = (c.settings && c.settings.strategy) || "round_robin";
+      $("#stratSelect").value = strategy;
+      useRouter = !!(c.settings && c.settings.use_router);
+      $("#routerToggle").checked = useRouter;
+      useMemory = !!(c.settings && c.settings.use_memory);
+      $("#memToggle").checked = useMemory;
+      autoLearn = !!(c.settings && c.settings.auto_learn);
+      $("#autoLearnToggle").checked = autoLearn;
+      verifiedOnly = !!(c.settings && c.settings.verified_only);
+      $("#verifiedOnlyToggle").checked = verifiedOnly;
+      summarizeHistory = !!(c.settings && c.settings.summarize_history);
+      $("#summarizeToggle").checked = summarizeHistory;
+      if (c.demo) $("#demoPill").classList.add("show");
+    } catch (e) { renderVoices([]); }
+    setupApi();
+    refreshMemCount();
+  }
+
+  async function refreshMemCount() {
+    try {
+      const m = await (await fetch("/api/memory")).json();
+      const n = (m.rules || []).length;
+      const badge = $("#memCount");
+      badge.textContent = String(n);
+      badge.style.display = n > 0 ? "" : "none";
+    } catch (_) {}
+  }
+
+  const warnBadge = (s) => (!s.has_key && !s.mock)
+    ? ` <span class="warn" title="Chưa có API key — chạy thật sẽ lỗi">⚠</span>` : "";
+
+  function makeVoiceRow(s) {
+    const row = el("label", "voice-row");
+    row.style.setProperty("--c", colorOf[s.name] || GOLD);
+    const rm = s.runtime ? `<button type="button" class="voice-row__rm" data-rm="${esc(s.name)}" title="Xoá model">×</button>` : "";
+    row.innerHTML =
+      `<span class="voice-row__dot"></span>
+       <span class="voice-row__txt">
+         <span class="voice-row__name">${esc(s.name)}${warnBadge(s)}</span>
+         <span class="voice-row__model">${esc(s.model)}</span>
+       </span>
+       ${rm}
+       <span class="switch"><input type="checkbox" data-name="${esc(s.name)}" ${s.enabled ? "checked" : ""}/><span class="switch__track"></span></span>`;
+    const rmBtn = row.querySelector("[data-rm]");
+    if (rmBtn) rmBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); removeSlot(s.name); };
+    return row;
+  }
+  function renderVoices(slots) {
+    const box = $("#voices");
+    box.innerHTML = "";
+    if (!slots.length) { box.appendChild(el("div", "hint", "Không tải được council.")); return; }
+    slots.forEach((s) => box.appendChild(makeVoiceRow(s)));
+  }
+
+  const enabledSlots = () => Array.from(document.querySelectorAll('#voices input:checked')).map((i) => i.dataset.name);
+
+  // ── mode segmented control ──
+  document.querySelectorAll("#modeSeg button").forEach((b) => b.onclick = () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll("#modeSeg button").forEach((x) => x.classList.toggle("is-active", x === b));
+    $("#modeHint").textContent = MODE_HINTS[mode] || "";
+    if (mode === "one" && rounds < 3) setRounds(3);
+  });
+
+  // ── rounds stepper ──
+  function setRounds(v) { rounds = Math.max(1, Math.min(4, v)); $("#rVal").textContent = rounds; $("#rMinus").disabled = rounds <= 1; $("#rPlus").disabled = rounds >= 4; }
+  $("#rMinus").onclick = () => setRounds(rounds - 1);
+  $("#rPlus").onclick = () => setRounds(rounds + 1);
+  function setAuditors(v) { auditors = Math.max(1, Math.min(3, v)); $("#aVal").textContent = auditors; $("#aMinus").disabled = auditors <= 1; $("#aPlus").disabled = auditors >= 3; }
+  $("#aMinus").onclick = () => setAuditors(auditors - 1);
+  $("#aPlus").onclick = () => setAuditors(auditors + 1);
+  $("#execToggle").onchange = (e) => { useExecutor = e.target.checked; };
+  $("#stratSelect").onchange = (e) => { strategy = e.target.value; };
+  $("#routerToggle").onchange = (e) => { useRouter = e.target.checked; };
+  $("#memToggle").onchange = (e) => { useMemory = e.target.checked; };
+  $("#autoLearnToggle").onchange = (e) => { autoLearn = e.target.checked; };
+  $("#verifiedOnlyToggle").onchange = (e) => { verifiedOnly = e.target.checked; };
+  $("#summarizeToggle").onchange = (e) => { summarizeHistory = e.target.checked; };
+
+  // ── tabs ──
+  document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
+    document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("is-active", x === t));
+    $("#streamPanel").hidden = t.dataset.tab !== "stream";
+    $("#apiPanel").hidden = t.dataset.tab !== "api";
+    $("#memoryPanel").hidden = t.dataset.tab !== "memory";
+    $("#statsPanel").hidden = t.dataset.tab !== "stats";
+    if (t.dataset.tab === "memory") renderMemory();
+    if (t.dataset.tab === "stats") renderStats();
+  });
+
+  // ── memory review panel ──
+  async function renderMemory() {
+    const list = $("#ruleList");
+    list.innerHTML = '<div class="rule-empty">Đang tải…</div>';
+    let rules = [];
+    try { rules = (await (await fetch("/api/memory")).json()).rules || []; }
+    catch (_) { list.innerHTML = '<div class="rule-empty">Lỗi tải ký ức.</div>'; return; }
+    $("#memCount2").textContent = String(rules.length);
+    refreshMemCount();
+    if (!rules.length) {
+      list.innerHTML = '<div class="rule-empty">Chưa có bài học nào. Dạy ở tab “Luồng tinh luyện”, hoặc bật “Tự học từ lỗi”.</div>';
+      return;
+    }
+    list.innerHTML = "";
+    rules.forEach((r) => list.appendChild(ruleCard(r)));
+  }
+
+  function ruleCard(r) {
+    const card = el("div", "rule " + (r.demoted ? "demoted " : "") + (r.verified ? "verified" : "unverified"));
+    const vbadge = r.verified ? '<span class="rule__badge v">đã duyệt</span>' : '<span class="rule__badge u">chưa duyệt</span>';
+    const dbadge = r.demoted ? '<span class="rule__badge d">⊘ bị hạ</span>' : "";
+    const date = (r.created_at || "").slice(0, 10);
+    const scoreHtml = (r.score && Math.abs(r.score) > 0.0001)
+      ? `<span class="rule__score${r.score < 0 ? " neg" : ""}">hiệu ứng: ${r.score > 0 ? "+" : ""}${r.score}</span>` : "";
+    card.innerHTML =
+      `<div class="rule__top"><div class="rule__guide">${esc(r.guidance)}</div><div class="rule__badges">${vbadge}${dbadge}</div></div>`
+      + `<div class="rule__meta"><span>nguồn: ${esc(r.source || "—")}</span><span>loại: ${esc(r.task_type || "—")}</span><span>dùng: ${r.uses || 0}×</span>${scoreHtml}<span>${esc(date)}</span></div>`
+      + `<div class="rule__acts">`
+      + `<button class="rbtn rbtn--v" data-act="verify">${r.verified ? "Bỏ duyệt" : "✓ Duyệt"}</button>`
+      + `<button class="rbtn" data-act="edit">✎ Sửa</button>`
+      + (r.demoted ? `<button class="rbtn rbtn--v" data-act="restore">↑ Khôi phục</button>` : `<button class="rbtn" data-act="demote">⊘ Hạ</button>`)
+      + `<button class="rbtn rbtn--del" data-act="del">🗑 Xoá</button>`
+      + `</div>`;
+    const acts = card.querySelector(".rule__acts");
+    const post = async (url, body) => { try { await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); } catch (_) {} renderMemory(); };
+    acts.querySelector('[data-act="verify"]').onclick = () => post(`/api/memory/${r.id}/verify`, { verified: !r.verified });
+    const demoteBtn = acts.querySelector('[data-act="demote"]');
+    if (demoteBtn) demoteBtn.onclick = () => post(`/api/memory/${r.id}/demote`, { demoted: true });
+    const restoreBtn = acts.querySelector('[data-act="restore"]');
+    if (restoreBtn) restoreBtn.onclick = () => post(`/api/memory/${r.id}/demote`, { demoted: false });
+    acts.querySelector('[data-act="del"]').onclick = async () => {
+      try { await fetch(`/api/memory/${r.id}`, { method: "DELETE" }); } catch (_) {}
+      renderMemory();
+    };
+    acts.querySelector('[data-act="edit"]').onclick = () => {
+      if (card.querySelector(".rule__edit")) return;
+      const ta = el("textarea", "rule__edit"); ta.value = r.guidance;
+      const save = el("button", "rbtn rbtn--v", "Lưu");
+      save.onclick = async () => {
+        const g = ta.value.trim(); if (!g) return;
+        try { await fetch(`/api/memory/${r.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ guidance: g }) }); } catch (_) {}
+        renderMemory();
+      };
+      acts.appendChild(save);
+      card.insertBefore(ta, acts);
+      ta.focus();
+    };
+    return card;
+  }
+
+  $("#memRefresh").onclick = () => renderMemory();
+  $("#memClear").onclick = async () => {
+    if (!confirm("Xoá TẤT CẢ bài học trong ký ức? Không hoàn tác được.")) return;
+    try { await fetch("/api/memory/all", { method: "DELETE" }); } catch (_) {}
+    renderMemory();
+  };
+
+  // ── stats dashboard ──
+  $("#statsRefresh").onclick = () => renderStats();
+
+  function statCard(n, label) {
+    return `<div class="stat-card"><div class="stat-card__n">${n}</div><div class="stat-card__l">${esc(label)}</div></div>`;
+  }
+
+  function barChart(data, key, opts) {
+    opts = opts || {};
+    if (!data || !data.length) return `<div class="rule-empty">chưa có dữ liệu</div>`;
+    const max = Math.max(...data.map((d) => d[key])) || 1;
+    const cols = data.slice(-14).map((d) => {
+      const h = Math.max(2, Math.round((d[key] / max) * 76));
+      const val = opts.fmt ? opts.fmt(d[key]) : d[key];
+      return `<div class="chart__col"><div class="chart__val">${val}</div>`
+        + `<div class="chart__bar${opts.green ? " green" : ""}" style="height:${h}px"></div>`
+        + `<div class="chart__lbl">${esc((d.date || "").slice(5))}</div></div>`;
+    }).join("");
+    return `<div class="chart">${cols}</div>`;
+  }
+
+  function sourceRows(bySource, total) {
+    const entries = Object.entries(bySource || {}).sort((a, b) => b[1] - a[1]);
+    if (!entries.length) return `<div class="rule-empty">chưa có rule</div>`;
+    const mx = Math.max(...entries.map((e) => e[1])) || 1;
+    return entries.map(([k, v]) =>
+      `<div class="srow"><span class="srow__k">${esc(k)}</span>`
+      + `<span class="srow__bar" style="width:${Math.round((v / mx) * 150)}px"></span>`
+      + `<span class="srow__v">${v}</span></div>`).join("");
+  }
+
+  async function renderStats() {
+    const body = $("#statsBody");
+    body.innerHTML = '<div class="rule-empty">Đang tải…</div>';
+    let d;
+    try { d = await (await fetch("/api/stats")).json(); }
+    catch (_) { body.innerHTML = '<div class="rule-empty">Lỗi tải thống kê.</div>'; return; }
+    const r = d.rules, run = d.runs;
+    const tot = (r.helpful + r.neutral + r.harmful) || 1;
+    const pc = (x) => (x / tot) * 100;
+    let html = "";
+    html += `<div class="stat-cards">${statCard(r.total, "tổng rule")}${statCard(r.verified, "đã duyệt")}${statCard(r.demoted, "bị hạ")}${statCard(run.total_runs, "lượt chạy")}</div>`;
+
+    html += `<div class="stat-sec"><div class="stat-sec__h">Sức khỏe rule</div>`
+      + `<div class="health"><span class="h-good" style="width:${pc(r.helpful)}%"></span><span class="h-neu" style="width:${pc(r.neutral)}%"></span><span class="h-bad" style="width:${pc(r.harmful)}%"></span></div>`
+      + `<div class="health-legend"><span><i class="h-good"></i>giúp ${r.helpful}</span><span><i class="h-neu"></i>trung tính ${r.neutral}</span><span><i class="h-bad"></i>hại ${r.harmful}</span></div></div>`;
+
+    html += `<div class="stat-sec"><div class="stat-sec__h">Theo nguồn</div>${sourceRows(r.by_source)}</div>`;
+
+    if (r.top_used && r.top_used.length) {
+      html += `<div class="stat-sec"><div class="stat-sec__h">Hay dùng nhất</div>`
+        + r.top_used.map((t) => `<div class="toprow"><span class="toprow__u">${t.uses}×</span><span>${esc(t.guidance)}${t.demoted ? " <span style='color:var(--rose)'>[bị hạ]</span>" : ""}</span></div>`).join("")
+        + `</div>`;
+    }
+
+    html += `<div class="stat-sec"><div class="stat-sec__h">Lượt chạy theo ngày</div>${barChart(run.runs_by_day, "count")}</div>`;
+    html += `<div class="stat-sec"><div class="stat-sec__h">Điểm trung bình theo ngày</div>${barChart(run.avg_score_by_day, "avg", { green: true, fmt: (v) => v.toFixed(2) })}</div>`;
+
+    const tt = Object.entries(run.task_types || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${esc(k)}:${v}`).join(" · ") || "—";
+    html += `<div class="stat-meta">Tổng lượt áp dụng rule: ${r.total_uses} · ~${run.avg_tokens} tok/lần · ${run.total_tokens} tok tổng<br/>Loại task: ${tt}</div>`;
+
+    body.innerHTML = html;
+  }
+
+  // ── stream rendering helpers ──
+  const scrollEnd = () => { const last = stream.lastElementChild; if (last) last.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" }); };
+
+  function phase(label, sub) {
+    const p = el("div", "phase");
+    p.innerHTML = `<span class="phase__eyebrow">${esc(label)}</span>` + (sub ? `<span class="phase__sub">${esc(sub)}</span>` : "");
+    stream.appendChild(p); scrollEnd(); return p;
+  }
+  function running(id, label, gold) {
+    const r = el("div", "running" + (gold ? " running--gold" : "")); r.id = id;
+    r.innerHTML = `<span class="running__pulse"></span>${esc(label)}`;
+    stream.appendChild(r); scrollEnd(); return r;
+  }
+  const clearRunning = (id) => { const r = document.getElementById(id); if (r) r.remove(); };
+
+  function collapseIfLong(body, limit) {
+    requestAnimationFrame(() => {
+      if (body.scrollHeight > limit) {
+        body.classList.add("is-collapsed");
+        const btn = el("button", "more", "Mở rộng");
+        btn.onclick = () => { const c = body.classList.toggle("is-collapsed"); btn.textContent = c ? "Mở rộng" : "Thu gọn"; };
+        body.after(btn);
+      }
+    });
+  }
+  function voiceCard(name, text, opts = {}) {
+    const card = el("div", "voice" + (opts.audit ? " voice--audit" : ""));
+    card.style.setProperty("--c", opts.color || colorOf[name] || GOLD);
+    const right = opts.badgeHtml || (opts.tag ? `<span class="voice__tag">${esc(opts.tag)}</span>` : "");
+    card.innerHTML = `<div class="voice__head"><span class="voice__dot"></span><span class="voice__name">${opts.titleHtml || esc(opts.title || name)}</span>${right}</div><div class="voice__body">${esc(text)}</div>`;
+    stream.appendChild(card);
+    collapseIfLong(card.querySelector(".voice__body"), 250);
+    scrollEnd();
+    return card;
+  }
+
+  function verdictBadge(crit) {
+    const m = /VERDICT:\s*(strong|mixed|weak)/i.exec(crit || "");
+    if (!m) return `<span class="voice__tag">audit</span>`;
+    const v = m[1].toLowerCase();
+    return `<span class="verdict verdict--${v}">${v}</span>`;
+  }
+
+  // ── pinned result ──
+  function showResult(text, cost) {
+    lastAnswer = text;
+    const body = $("#resultBody");
+    body.textContent = text;
+    body.classList.remove("is-collapsed");
+    const secs = Math.max(1, Math.round((performance.now() - startedAt) / 1000));
+    let meta = `${secs}s · ${modelCount} model · ${rounds} vòng`;
+    if (cost && cost.total_tokens) {
+      meta += ` · ${cost.total_tokens.toLocaleString()} tok`;
+      if (cost.usd && cost.usd > 0) meta += ` · ~$${cost.usd < 0.01 ? cost.usd.toFixed(4) : cost.usd.toFixed(3)}`;
+    }
+    $("#resultMeta").textContent = meta;
+    $("#resultbar").hidden = false;
+    const teach = $("#teach");
+    if (teach) { teach.open = false; $("#teachInput").value = ""; $("#teachHint").textContent = "chỉ rule trừu tượng được lưu — content-free"; $("#teachBtn").disabled = false; }
+    requestAnimationFrame(() => {
+      if (body.scrollHeight > 150) { body.classList.add("is-collapsed"); $("#resultExpand").style.display = ""; $("#resultExpand").textContent = "Mở rộng"; }
+      else { $("#resultExpand").style.display = "none"; }
+    });
+  }
+  $("#resultExpand").onclick = () => { const b = $("#resultBody"); const c = b.classList.toggle("is-collapsed"); $("#resultExpand").textContent = c ? "Mở rộng" : "Thu gọn"; };
+  $("#resultCopy").onclick = async () => { try { await navigator.clipboard.writeText(lastAnswer); $("#resultCopy").textContent = "Đã chép ✓"; setTimeout(() => $("#resultCopy").textContent = "Sao chép", 1400); } catch (_) {} };
+
+  $("#teachBtn").onclick = async () => {
+    const correction = $("#teachInput").value.trim();
+    const hint = $("#teachHint");
+    if (!correction) { hint.textContent = "Nhập điều cần sửa trước đã."; return; }
+    const btn = $("#teachBtn");
+    btn.disabled = true; hint.textContent = "Đang rút bài học…";
+    try {
+      const r = await fetch("/api/learn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request: lastPrompt, bad_answer: lastAnswer, correction }),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const rule = await r.json();
+      hint.innerHTML = `Đã ghi nhớ ✓ <span style="color:var(--green)">${esc(rule.guidance)}</span>`;
+      $("#teachInput").value = "";
+      refreshMemCount();
+    } catch (_) {
+      hint.textContent = "Lỗi khi ghi nhớ — thử lại.";
+      btn.disabled = false;
+    }
+  };
+
+  function handle(ev) {
+    switch (ev.type) {
+      case "fanout_start":
+        phase("Fan-out", (ev.slots || []).join("  ·  "));
+        running("run-fanout", "Council đang soạn câu trả lời…");
+        break;
+      case "fanout_done":
+        clearRunning("run-fanout");
+        Object.entries(ev.answers).forEach(([n, t]) => voiceCard(n, t, { tag: "v1" }));
+        break;
+      case "round_start":
+        phase(`Vòng ${ev.round + 1} · Audit chéo`);
+        running(`run-audit-${ev.round}`, "Đang chấm chéo theo rubric…");
+        break;
+      case "audit_done": {
+        clearRunning(`run-audit-${ev.round}`);
+        const reviews = ev.reviews || Object.entries(ev.critiques || {}).map(([target, crit]) => ({ target, auditor: (ev.pairs || {})[target], critique: crit }));
+        reviews.forEach(({ target, auditor, critique }) => {
+          const titleHtml = `${esc(auditor)} <span class="arrow">▸ chấm</span> ${esc(target)}`;
+          voiceCard(auditor, critique, { audit: true, color: colorOf[auditor], titleHtml, badgeHtml: verdictBadge(critique) });
+        });
+        phase(`Vòng ${ev.round + 1} · Vá`);
+        running(`run-patch-${ev.round}`, "Các model đang tự sửa theo critique…");
+        break;
+      }
+      case "patch_done":
+        clearRunning(`run-patch-${ev.round}`);
+        Object.entries(ev.answers).forEach(([n, t]) => voiceCard(n, t, { tag: `v${ev.round + 2}` }));
+        break;
+      case "merge_start":
+        phase("Hội tụ");
+        running("run-merge", "Đang hợp nhất thành một câu trả lời…", true);
+        break;
+      case "done":
+        clearRunning("run-merge");
+        stream.appendChild(el("div", "marker", `<span>✦</span> Hội tụ hoàn tất — câu trả lời ở thanh trên cùng`));
+        scrollEnd();
+        showResult(ev.final, ev.cost);
+        pendingFinal = ev.final || "";
+        break;
+      case "route": {
+        const tags = (ev.slots || []).map((n) => `<span class="route-chip">${esc(n)}</span>`).join("");
+        const ex = ev.use_executor ? " · executor" : "";
+        const src = ev.routed ? "" : ` <span style="color:var(--muted)">(mặc định)</span>`;
+        stream.appendChild(el("div", "route-card",
+          `<div class="route-head"><span class="route-mark">⚖</span> Router${src}<span class="route-meta">${esc(ev.task_type)} · ${esc(ev.strategy)} · ${ev.rounds} vòng${ex}</span></div>`
+          + `<div class="route-slots">${tags}</div>`
+          + (ev.reason ? `<div class="route-reason">${esc(ev.reason)}</div>` : "")));
+        scrollEnd();
+        break;
+      }
+      case "learned": {
+        const r = ev.rule || {};
+        const LBL = { executor_fail: "executor bắt một câu sai", low_confidence: "hội đồng tự chấm thấp", no_converge: "hội đồng không hội tụ" };
+        const why = LBL[ev.source] || "phát hiện câu chưa ổn";
+        stream.appendChild(el("div", "learn-card",
+          `<div class="learn-head"><span>✦</span> Tự học · ${esc(why)}</div>`
+          + `<div class="learn-rule">${esc(r.guidance || "")}</div>`
+          + `<div class="learn-src">đã ghi nhớ · nguồn: ${esc(ev.source || "—")} · chưa duyệt (xem tab Ký ức)</div>`));
+        scrollEnd(); refreshMemCount();
+        break;
+      }
+      case "memory": {
+        const items = (ev.rules || []).map((g) => `<div class="mem-item">${esc(g)}</div>`).join("");
+        stream.appendChild(el("div", "mem-card",
+          `<div class="mem-head"><span>✦</span> Ký ức · áp dụng ${(ev.rules || []).length} bài học</div>`
+          + `<div class="mem-list">${items}</div>`));
+        scrollEnd();
+        break;
+      }
+      case "evidence": {
+        Object.entries(ev.results || {}).forEach(([name, r]) => {
+          if (r.status === "na") return;
+          const icon = r.status === "pass" ? "✓" : "✗";
+          stream.appendChild(el("div", "evidence " + r.status, `${icon} kiểm chứng ${esc(name)}: ${esc(r.summary)}`));
+        });
+        scrollEnd();
+        break;
+      }
+      case "slot_error":
+        stream.appendChild(el("div", "stopped", `⚠ ${esc(ev.slot)} lỗi ở ${esc(ev.phase)} (${esc(ev.message)}) — bỏ qua, vòng vẫn chạy.`));
+        scrollEnd();
+        break;
+      case "converged":
+        stream.appendChild(el("div", "marker", `<span>✦</span> Hội tụ sớm (${Math.round((ev.similarity || 0) * 100)}% giống vòng trước) — dừng để tiết kiệm.`));
+        scrollEnd();
+        break;
+      case "budget_hit":
+        stream.appendChild(el("div", "stopped", `■ Chạm trần token (${(ev.tokens || 0).toLocaleString()}) — merge sớm.`));
+        scrollEnd();
+        break;
+      case "attachments": {
+        const names = (ev.files || []).map((f) => esc(f.filename)).join(", ");
+        stream.appendChild(el("div", "attachments-line", `Council đọc ${(ev.files || []).length} tài liệu: ${names}`));
+        scrollEnd();
+        break;
+      }
+      case "artifact": {
+        const card = el("div", "artifact-card");
+        card.innerHTML =
+          `<div class="artifact-card__ic">📄</div>`
+          + `<div class="artifact-card__meta"><div class="artifact-card__name">${esc(ev.filename)}</div>`
+          + `<div class="artifact-card__sub">${esc(ev.lang || "")} · ${(ev.bytes || 0).toLocaleString()} bytes</div></div>`
+          + `<a class="artifact-card__dl" href="${esc(ev.url)}" download>Tải về</a>`;
+        stream.appendChild(card);
+        scrollEnd();
+        break;
+      }
+      case "error":
+        document.querySelectorAll(".running").forEach((r) => r.remove());
+        stream.appendChild(el("div", "errcard", `<b>Không chạy được.</b> ${esc(ev.message)}<br/>Kiểm tra API key và base_url của slot trong <code>config.yaml</code>, hoặc thử lại với chế độ demo.`));
+        scrollEnd();
+        break;
+    }
+  }
+
+  // ── run ──
+  async function run() {
+    if (busy) return;
+    const prompt = promptEl.value.trim();
+    if (!prompt) { note.textContent = "Nhập câu hỏi trước đã."; note.classList.add("err"); return; }
+    const slots = enabledSlots();
+    if (!slots.length) { note.textContent = "Bật ít nhất một model trong council."; note.classList.add("err"); return; }
+    note.classList.remove("err"); note.textContent = "Enter để gửi · Shift+Enter xuống dòng";
+    lastPrompt = prompt;
+
+    busy = true; startedAt = performance.now(); modelCount = slots.length;
+    controller = new AbortController();
+    refineBtn.classList.add("is-running"); refineBtn.disabled = true;
+    cancelBtn.classList.add("show");
+    $("#refineLabel").textContent = "Đang tinh luyện…";
+    $("#resultbar").hidden = true;
+    $("#empty")?.remove();
+    pendingFinal = "";
+    if (conversation.length) stream.appendChild(el("div", "turn-sep"));
+    stream.appendChild(el("div", "user-bubble", esc(prompt)));
+    scrollEnd();
+
+    try {
+      const resp = await fetch("/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, max_rounds: rounds, mode, auditors_per_answer: auditors, use_executor: useExecutor, strategy, use_router: useRouter, use_memory: useMemory, auto_learn: autoLearn, verified_only: verifiedOnly, summarize_history: summarizeHistory, file_tokens: attachedFiles.map((f) => f.token), history: conversation, enabled_slots: slots }),
+        signal: controller.signal,
+      });
+      if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let idx;
+        while ((idx = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, idx).trim();
+          buf = buf.slice(idx + 1);
+          if (line) { try { handle(JSON.parse(line)); } catch (_) {} }
+        }
+      }
+      // chốt lượt vào lịch sử đa lượt (cho lượt kế tiếp)
+      if (pendingFinal) {
+        conversation.push({ role: "user", content: prompt });
+        conversation.push({ role: "assistant", content: pendingFinal });
+        saveActiveTurns();
+      }
+    } catch (e) {
+      document.querySelectorAll(".running").forEach((r) => r.remove());
+      if (e.name === "AbortError") {
+        stream.appendChild(el("div", "stopped", "■ Đã dừng."));
+      } else {
+        stream.appendChild(el("div", "errcard", `<b>Mất kết nối tới server.</b> ${esc(String(e.message || e))}`));
+      }
+      scrollEnd();
+    } finally {
+      busy = false; controller = null;
+      refineBtn.classList.remove("is-running"); refineBtn.disabled = false;
+      cancelBtn.classList.remove("show");
+      $("#refineLabel").textContent = "Tinh luyện";
+    }
+  }
+
+  refineBtn.onclick = run;
+  cancelBtn.onclick = () => { if (controller) controller.abort(); };
+  promptEl.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); run(); } });
+
+  // ── API snippets ──
+  let snippets = {};
+  function setupApi() {
+    const origin = window.location.origin;
+    $("#epUrl").textContent = origin + "/v1";
+    snippets = {
+      curl:
+`curl ${origin}/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "theosis-v1",
+    "messages": [{"role": "user", "content": "Xin chào Theosis"}]
+  }'`,
+      python:
+`import requests
+
+r = requests.post("${origin}/v1/chat/completions", json={
+    "model": "theosis-v1",
+    "messages": [{"role": "user", "content": "Xin chào Theosis"}],
+    # "max_rounds": 3,   # tham số riêng (tuỳ chọn)
+})
+print(r.json()["choices"][0]["message"]["content"])`,
+      openai:
+`from openai import OpenAI
+
+client = OpenAI(base_url="${origin}/v1", api_key="not-needed")
+r = client.chat.completions.create(
+    model="theosis-v1",
+    messages=[{"role": "user", "content": "Xin chào Theosis"}],
+)
+print(r.choices[0].message.content)`,
+    };
+    showSnippet("curl");
+  }
+  function showSnippet(key) {
+    $("#snippet").textContent = snippets[key] || "";
+    document.querySelectorAll("#seg button").forEach((b) => b.classList.toggle("is-active", b.dataset.snip === key));
+  }
+  document.querySelectorAll("#seg button").forEach((b) => b.onclick = () => showSnippet(b.dataset.snip));
+  $("#copyBtn").onclick = async () => { try { await navigator.clipboard.writeText($("#snippet").textContent); $("#copyBtn").textContent = "Đã chép ✓"; setTimeout(() => $("#copyBtn").textContent = "Sao chép", 1400); } catch (_) {} };
+
+  // ── add / remove model ──
+  const PROVIDERS = {
+    "OpenAI": { base: "https://api.openai.com/v1", model: "gpt-4o" },
+    "Anthropic": { base: "https://api.anthropic.com/v1", model: "claude-opus-4-8" },
+    "OpenRouter": { base: "https://openrouter.ai/api/v1", model: "anthropic/claude-3.5-sonnet" },
+    "DeepSeek": { base: "https://api.deepseek.com/v1", model: "deepseek-chat" },
+    "xAI (Grok)": { base: "https://api.x.ai/v1", model: "grok-4" },
+    "Groq": { base: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile" },
+    "Ollama (local)": { base: "http://localhost:11434/v1", model: "llama3", local: true },
+    "Tùy chỉnh": { base: "", model: "" },
+  };
+  function initProviders() {
+    const sel = $("#mProvider");
+    sel.innerHTML = Object.keys(PROVIDERS).map((k) => `<option>${k}</option>`).join("");
+    sel.onchange = applyProvider;
+  }
+  function applyProvider() {
+    const p = PROVIDERS[$("#mProvider").value] || {};
+    $("#mBase").value = p.base || "";
+    if (p.model) $("#mModel").value = p.model;
+    $("#mKeyHint").textContent = p.local ? "Model local — không cần key." : "Key lưu ở slots.local.yaml (gitignored).";
+  }
+  function openModal() { $("#mErr").textContent = ""; $("#modal").classList.add("show"); applyProvider(); $("#mName").focus(); }
+  function closeModal() { $("#modal").classList.remove("show"); }
+  $("#addModelBtn").onclick = openModal;
+  $("#mCancel").onclick = closeModal;
+  $("#modal").onclick = (e) => { if (e.target === $("#modal")) closeModal(); };
+
+  async function addSlot() {
+    const name = $("#mName").value.trim();
+    const model = $("#mModel").value.trim();
+    const base_url = $("#mBase").value.trim();
+    const api_key = $("#mKey").value.trim();
+    const system = $("#mSystem").value.trim();
+    const err = $("#mErr");
+    if (!name || !model || !base_url) { err.textContent = "Cần tên, model và base URL."; return; }
+    $("#mAdd").disabled = true;
+    try {
+      const r = await fetch("/api/slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, model, base_url, api_key, system, enabled: true }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) { err.textContent = data.detail || "Không thêm được."; return; }
+      const s = data.slot;
+      colorOf[s.name] = PALETTE[Object.keys(colorOf).length % PALETTE.length];
+      $("#voices").appendChild(makeVoiceRow(s));
+      ["#mName", "#mModel", "#mKey", "#mSystem"].forEach((id) => { $(id).value = ""; });
+      closeModal();
+    } catch (e) {
+      err.textContent = "Lỗi kết nối: " + (e.message || e);
+    } finally {
+      $("#mAdd").disabled = false;
+    }
+  }
+  $("#mAdd").onclick = addSlot;
+
+  async function removeSlot(name) {
+    try {
+      const r = await fetch("/api/slots/" + encodeURIComponent(name), { method: "DELETE" });
+      if (r.ok) {
+        const input = document.querySelector(`#voices input[data-name="${CSS.escape(name)}"]`);
+        const row = input ? input.closest(".voice-row") : null;
+        if (row) row.remove();
+      }
+    } catch (_) {}
+  }
+
+  initProviders();
+  loadConfig();
+  initBoxes();
+})();
+</script>
+</body>
+</html>
